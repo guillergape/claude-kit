@@ -118,11 +118,14 @@ def mode_staged(pats):
 
 
 def mode_push(pats):
+    # `--not --remotes` revienta si hay un desktop.ini suelto en .git/refs (Google Drive los crea): se listan a mano
+    known = [f"^{sha}" for sha, ref in (l.split(" ", 1) for l in git("for-each-ref", "--format=%(objectname) %(refname)", "refs/remotes").splitlines())
+             if not ref.endswith("desktop.ini")]
     commits = []
     for line in sys.stdin.read().splitlines():
         parts = line.split()
         if len(parts) == 4 and set(parts[1]) != {"0"}:
-            commits += git("rev-list", parts[1], "--not", "--remotes").split()
+            commits += git("rev-list", parts[1], *known).split()
     hits = []
     for c in dict.fromkeys(commits):
         short = c[:8]
