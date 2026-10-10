@@ -4,6 +4,9 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-10 — trucos de Codex
+- `guias/trucos.md`: sección nueva **Codex (plugin `codex`)**: cómo arreglar «blocked by policy» en Windows (`~/.codex/config.toml` con `[windows] sandbox = "unelevated"`), subir el esfuerzo por defecto, y por qué `--write` necesita un hilo nuevo. Solo te afecta si usas el plugin de Codex.
+
 ## 2026-10-10 — inglés (y cualquier idioma)
 - **Idioma de la instalación:** la guía pregunta primero el idioma (`IDIOMA` en `kit-datos.yaml`), te habla en él y traduce lo que instala (CLAUDE.md global, guías, plantillas). Si ya tienes el kit, añade `IDIOMA: es` a tu `kit-datos.yaml`.
 - `README.md` en inglés para empezar; `actualiza kit >` aplica los cambios traducidos si tu copia no está en español.

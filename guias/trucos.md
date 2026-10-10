@@ -30,5 +30,12 @@
 - `ponytail` (marketplace GitHub `DietrichGebert/ponytail`): empuja a Claude a la solución más simple que funcione (menos código, stdlib antes que dependencias).
 - `codex` (`openai/codex-plugin-cc`): segunda opinión con Codex. Solo si tienes cuenta de OpenAI.
 
+## Codex (plugin `codex`): lo que da guerra
+- **Windows: «blocked by policy» / «el acceso de solo lectura bloqueó la búsqueda y `rg`».** Sin `~/.codex/config.toml`, Codex no tiene sandbox en Windows y rechaza **todos** los comandos en solo lectura (no es culpa de la ruta, ni de Drive, ni de los espacios). Arreglo: crear `~/.codex/config.toml` con `[windows]` y `sandbox = "unelevated"`. `"elevated"` falla (`CreateProcessWithLogonW failed: 267`) y los flags viejos `experimental_windows_sandbox` / `elevated_windows_sandbox` están eliminados desde codex-cli 0.159. Si reaparece tras actualizar Codex, mirar primero que esa línea siga ahí.
+- **Esfuerzo:** sin `--effort` el plugin pasa null y Codex usa `reasoning effort: none` → revisiones flojas. Poner `model_reasoning_effort = "high"` en el mismo `config.toml`, arriba del todo (antes de `[windows]`).
+- **Solo lectura bloquea toda escritura, `%TEMP%` incluido**, así que cualquier script que cree temporales (Python `tempfile`, SciPy…) falla con «No usable temporary directory». Para revisiones que tienen que volver a ejecutar código: `--write` (workspace-write: carpeta de trabajo, `/tmp`, `$TMPDIR`).
+- **Las ejecuciones con `--write` van en un hilo nuevo** (`--fresh`, o elegir «new thread» cuando pregunte): si continúas el hilo anterior conserva su sandbox de solo lectura y da «Access to the path … is denied».
+- El subagente que reenvía la petición **quita `--write`** si el prompt dice «no modifiques nada / solo revisa»: pedirlo como «escribe solo en `<carpeta de pruebas>`».
+
 ## Promos de Anthropic
 A veces dan crédito gratis para **sesiones en la nube** (cloud sessions de Claude Code, necesitan un repo de GitHub) con fecha de caducidad; mira el menú de uso de claude.ai. No cubre sesiones locales.
