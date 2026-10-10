@@ -1,3 +1,3 @@
-Versión del kit: 2026-10-10_1829
-(fecha del fichero más nuevo: guias/uni.md)
+Versión del kit: 2026-10-10_1926
+(fecha del fichero más nuevo: plantillas/CLAUDE.global.md)
 Si mandas el informe o feedback, copia esta línea.
