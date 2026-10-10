@@ -100,8 +100,8 @@ Lo que instalé del kit (qué es · cómo se usa · cuándo sirve):
 <!-- kit:actualizar -->
 ## Actualizar el kit — `actualiza kit >`
 - **`actualiza kit >`** → trae la versión nueva del kit y sigue `<LAB>/kit/ACTUALIZAR.md` **de la versión nueva** (empieza siempre enseñando qué cambió, sin aplicar nada):
-  - con git: `git -C "<LAB>/kit" rev-parse HEAD` (apúntalo: es la versión vieja) y luego `git -C "<LAB>/kit" pull` (repo: <REPO_URL>);
-  - sin git: descarga el zip nuevo (<REPO_URL>, o el que me manden por correo) y descomprímelo en `<LAB>/kit-nuevo/`; `<LAB>/kit/` sigue siendo la versión vieja hasta el final.
+  - con git: `git -C "<LAB>/kit" rev-parse HEAD` (apúntalo: es la versión vieja) y luego `git -C "<LAB>/kit" pull` (repo: https://github.com/guillergape/claude-kit);
+  - sin git: descarga el zip nuevo (https://github.com/guillergape/claude-kit, o el que me manden por correo) y descomprímelo en `<LAB>/kit-nuevo/`; `<LAB>/kit/` sigue siendo la versión vieja hasta el final.
 - Nunca edites `<LAB>/kit/`: es la copia limpia del kit con la que se compara al actualizar. Los cambios míos van en las copias instaladas.
 <!-- /kit:actualizar -->
 

@@ -4,11 +4,11 @@
 
 Herramientas y costumbres para trabajar con Claude Code, sin nada personal de nadie. Casi todo lo importante gasta **0 tokens** (lo hacen hooks y scripts, no el modelo). Vale para **Windows, Mac y Linux**: la instalación detecta tu sistema y te pregunta lo tuyo (nombre, correos, universidad, Moodle, asignaturas…), lo guarda en un fichero de datos y rellena todo desde ahí.
 
-Repositorio (para `actualiza kit >`): <REPO_URL>
+Repositorio (para `actualiza kit >`): https://github.com/guillergape/claude-kit
 
 ## Cómo empezar
 1. Crea una carpeta **fija** para tu "laboratorio" de Claude (no en Descargas), p. ej. `~/claude-lab` (Windows: `C:\Users\<tú>\claude-lab`).
-2. Mete el kit dentro **con el nombre `kit`**: `git clone <REPO_URL> kit` (así luego se actualiza con un `git pull`), o descomprime el zip y renombra la carpeta a `kit`.
+2. Mete el kit dentro **con el nombre `kit`**: `git clone https://github.com/guillergape/claude-kit kit` (así luego se actualiza con un `git pull`), o descomprime el zip y renombra la carpeta a `kit`.
 3. Abre un terminal en la carpeta del lab (no dentro de `kit`) y arranca `claude`. Pon **Opus con esfuerzo high** (`/model`).
 4. Pégale este mensaje:
 
