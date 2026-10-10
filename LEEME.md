@@ -2,6 +2,8 @@
 
 > **Experimental.** Es un proyecto pequeño y en pruebas: las guías y scripts pueden cambiar o fallar sin aviso (lo menos probado es Mac). *(Quitar este aviso si el proyecto crece.)*
 
+*English: [README.md](README.md). La instalación te pregunta primero el idioma.*
+
 Herramientas y costumbres para trabajar con Claude Code, sin nada personal de nadie. Casi todo lo importante gasta **0 tokens** (lo hacen hooks y scripts, no el modelo). Vale para **Windows, Mac y Linux**: la instalación detecta tu sistema y te pregunta lo tuyo (nombre, correos, universidad, Moodle, asignaturas…), lo guarda en un fichero de datos y rellena todo desde ahí.
 
 Repositorio (para `actualiza kit >`): https://github.com/guillergape/claude-kit

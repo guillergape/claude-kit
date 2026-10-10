@@ -17,6 +17,7 @@ WHISPER_PY: ""           # windows: <HOME>/.whisper/Scripts/python.exe · mac/li
 PAPELERA: ""             # orden para mandar un fichero a la papelera (ver CLAUDE.md del kit, fase 0)
 
 # --- Persona (fase 0, preguntas) ---
+IDIOMA: ""               # idioma de la instalación y de lo instalado: es | en | de | … (regla 11 de kit/CLAUDE.md)
 Nombre: ""
 CORREO: ""               # cuenta principal (Google)
 correos_extra: []        # - otra@… (para qué)

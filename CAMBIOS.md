@@ -4,6 +4,11 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-10 — inglés (y cualquier idioma)
+- **Idioma de la instalación:** la guía pregunta primero el idioma (`IDIOMA` en `kit-datos.yaml`), te habla en él y traduce lo que instala (CLAUDE.md global, guías, plantillas). Si ya tienes el kit, añade `IDIOMA: es` a tu `kit-datos.yaml`.
+- `README.md` en inglés para empezar; `actualiza kit >` aplica los cambios traducidos si tu copia no está en español.
+- Los textos de las ventanas de los scripts (`costlog>`, `send>`, `timelog`…) siguen en español.
+
 ## 2026-10-10 — versión 3: kit único
 - **Un solo kit para Windows, Mac y Linux.** Los scripts detectan el sistema; la guía pregunta solo lo que cambia (paquetes, `python`/`python3`, keep-awake, rutas de Whisper).
 - **Tus datos en un fichero:** `kit-datos.yaml` en tu lab (nombre, correos, uni, Moodle, asignaturas, colores…). Las plantillas se rellenan desde ahí con `kit/rellenar.py`.

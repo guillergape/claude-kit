@@ -8,7 +8,8 @@ Cuando la persona escriba `actualiza kit >` (o lo pida con otras palabras). **La
 1. **Solo se aplica lo que cambió en el kit, y solo en lo que la persona tiene instalado.** Un componente nuevo se ofrece; no se instala sin que lo pida (entonces se sigue su fase de `kit/CLAUDE.md`).
 2. **Lo que la persona cambió se respeta.** Si una copia instalada no es igual a lo que puso el kit, no se sobrescribe: se fusiona enseñándole el resultado, o se le pregunta.
 3. **Mismo rastro que al instalar** (regla 3 de `kit/CLAUDE.md`): copia `.bak-AAAA-MM-DD` antes y `.kit-AAAA-MM-DD` justo después de cada cambio global, marcas `<!-- kit:… -->`, JSON validado, nada global sin enseñar el cambio exacto.
-4. **Nunca edites `<LAB>/kit/`** salvo para ponerlo en la versión nueva (git pull / cambiar la carpeta del zip).
+4. **Idioma** (`IDIOMA` en `kit-datos.yaml`, regla 11 de `kit/CLAUDE.md`): si no es `es`, las copias instaladas de texto están traducidas. Entonces compáralas por contenido, no línea a línea, y aplica el cambio del kit **traducido**; el 🟢/🟡 sale de comparar con el `.kit-` o la copia que dejó la instalación, no con el kit en español.
+5. **Nunca edites `<LAB>/kit/`** salvo para ponerlo en la versión nueva (git pull / cambiar la carpeta del zip).
 
 ## Paso 1 — Traer la versión nueva (si no se hizo ya)
 - **Con git** (`kit_commit` no vacío en `<LAB>/kit-datos.yaml`): `VIEJA = kit_commit`. Si `git -C <LAB>/kit status --porcelain` no está vacío, alguien editó el kit: enséñalo y pregunta antes de seguir (lo normal es mover esos cambios a la copia instalada y `git -C <LAB>/kit checkout -- .`). Luego `git -C <LAB>/kit pull --ff-only`. `NUEVA = HEAD`.
