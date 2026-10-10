@@ -1,0 +1,8 @@
+#!/bin/sh
+# Barrera de datos personales (ver tools/check_privado.py). Activar: git config core.hooksPath githooks
+root=$(git rev-parse --show-toplevel)
+for py in python3 python; do
+  "$py" -c "" >/dev/null 2>&1 && exec "$py" "$root/tools/check_privado.py" --push
+done
+echo "check_privado: no hay Python que funcione; push BLOQUEADO." >&2
+exit 1

@@ -1,0 +1,11 @@
+desktop.ini
+__pycache__/
+*.pyc
+*.zip
+# temporales de Google Drive
+*.tmp
+*.tmp.drivedownload
+*.tmp.driveupload
+.tmp.drivedownload/
+.tmp.driveupload/
+~$*

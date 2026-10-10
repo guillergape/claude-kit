@@ -1,0 +1,43 @@
+# Datos de la persona para el kit → se copia a <LAB>/kit-datos.yaml en la fase 0 y se rellena con sus respuestas.
+# Las plantillas se rellenan desde aquí: cada clave de primer nivel con valor simple sustituye a <CLAVE>
+# (`python kit/rellenar.py <plantilla> --datos kit-datos.yaml`). Lo indentado y las listas solo lo lee Claude.
+# Es personal: no sale del ordenador (ni en repos, ni en correos). Si cambia un dato, se cambia aquí y se vuelve a rellenar.
+
+# --- Versión instalada (la escriben la fase 0 y `actualiza kit >`) ---
+kit_version: ""          # línea "Versión del kit: …" de kit/VERSION.txt
+kit_commit: ""           # `git -C kit rev-parse HEAD` si el kit es un clon de git; vacío si vino en zip
+
+# --- Sistema (fase 0, lo detecta Claude) ---
+SO: ""                   # windows | mac | linux
+PY: ""                   # windows: python · mac/linux: python3 (o la ruta del venv si pip global está bloqueado)
+HOME: ""                 # carpeta de usuario con barras /  (C:/Users/<usuario> · /Users/<usuario> · /home/<usuario>)
+LAB: ""                  # carpeta del lab con barras /; el kit vive en <LAB>/kit
+DESCARGAS: ""            # carpeta de descargas con barras /
+WHISPER_PY: ""           # windows: <HOME>/.whisper/Scripts/python.exe · mac/linux: <HOME>/.whisper/bin/python
+PAPELERA: ""             # orden para mandar un fichero a la papelera (ver CLAUDE.md del kit, fase 0)
+
+# --- Persona (fase 0, preguntas) ---
+Nombre: ""
+CORREO: ""               # cuenta principal (Google)
+correos_extra: []        # - otra@… (para qué)
+conectores_claude_ai: "" # gmail, calendar, drive… y con qué cuenta; vacío = ninguno
+REINICIO_SEMANAL: ""     # día y hora del reinicio del límite semanal de su plan (claude.ai → Uso)
+
+# --- Uni (solo si estudia) ---
+UNI: ""                  # nombre de la universidad
+MOODLE_URL: ""           # https://… (comprobada abriéndola); vacío = sin Moodle
+CURSO: ""                # carpeta del curso actual con barras /
+idioma_documentos: ""    # es / en / …
+asignaturas: []          # - {corto: Prog, nombre: "Programación", moodle_id: 12345}
+otro_agente: ""          # p. ej. "Grok Bot, uno por asignatura" (activa el módulo grok-bot)
+
+# --- Preferencias ---
+calendario:
+  cuenta: ""
+  colores: {}            # practicas: verde, examenes: rojo, finales: rojo MAYÚSCULAS, canceladas: gris…
+  recordatorios: ""      # p. ej. "2 h antes + víspera 21:00"
+
+# --- Qué se instaló (cada fase añade sus líneas; lo usan `actualiza kit >` y `desinstalar kit >`) ---
+modulos: []              # moodle, uc3m, asignaturas, grok-bot
+instalado: []            # - "costlog/costlog.py -> <LAB>/costlog/costlog.py"
+                         # - "plantillas/CLAUDE.global.md#kit:email -> <HOME>/.claude/CLAUDE.md"

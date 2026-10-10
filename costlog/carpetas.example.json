@@ -1,0 +1,15 @@
+{
+  "projects": [
+    ["Uni", "~/Documents/Uni"],
+    ["lab", "~/claude-lab"]
+  ],
+  "step1": [
+    ["Uni", "~/Documents/Uni"],
+    ["lab", "~/claude-lab"],
+    ["Descargas", "~/Downloads"]
+  ],
+  "step2": [
+    ["Documentos", "~/Documents"],
+    ["Escritorio", "~/Desktop"]
+  ]
+}

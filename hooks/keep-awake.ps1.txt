@@ -1,0 +1,143 @@
+# Keeps Windows from going into standby while Claude Code is working.
+# The screen is kept on too: this laptop uses Modern Standby, where the screen
+# turning off (idle timeout or SC_MONITORPOWER) IS the standby and freezes every
+# desktop process, even with ES_SYSTEM_REQUIRED held (tested 2026-10-08: 311 s frozen).
+# To save battery instead, after $IdleDC / $IdleAC seconds without input brightness
+# drops to 0, and after the same time again a static black screen covers it; any input
+# restores the user's original brightness. Notes and tests: keep-awake.md next to this file.
+#   keep-awake.ps1 start  -> UserPromptSubmit hook (reads hook JSON from stdin)
+#   keep-awake.ps1 stop   -> Stop / StopFailure / SessionEnd hooks
+#   keep-awake.ps1 keeper <sessionId> <transcriptPath>  -> internal background loop
+#   keep-awake.ps1 saver <stage2Seconds>  -> internal dim + black screen (one at a time, ends on any input)
+param([string]$Mode, [string]$SessionId, [string]$Transcript)
+
+$dir = Join-Path $env:USERPROFILE '.claude\state\keep-awake'
+New-Item -ItemType Directory -Force $dir | Out-Null
+
+$StaleMinutes = 30   # give up if the transcript hasn't changed for this long (stuck / waiting)
+$MaxHours     = 8    # hard cap, just in case
+$IdleDC       = 180  # seconds without input before the saver, on battery
+$IdleAC       = 300  # same, plugged in
+$SaverMutex   = 'Local\ClaudeKeepAwakeSaver'
+$BrightFile   = Join-Path $dir 'brightness.txt'   # original brightness while the saver is up
+
+function Read-HookInput {
+    try { $raw = [Console]::In.ReadToEnd(); if ($raw) { return $raw | ConvertFrom-Json } } catch {}
+    return $null
+}
+function Get-Bright { (Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightness -ErrorAction SilentlyContinue | Select-Object -First 1).CurrentBrightness }
+function Set-Bright($v) {
+    Get-CimInstance -Namespace root/wmi -ClassName WmiMonitorBrightnessMethods -ErrorAction SilentlyContinue |
+        Invoke-CimMethod -MethodName WmiSetBrightness -Arguments @{Timeout = 0; Brightness = [byte]$v} | Out-Null
+}
+function Test-Saver { $m = $null; $up = [Threading.Mutex]::TryOpenExisting($SaverMutex, [ref]$m); if ($m) { $m.Dispose() }; $up }
+function Add-Input {
+    Add-Type -Namespace KA -Name Input -MemberDefinition @'
+[StructLayout(LayoutKind.Sequential)] public struct LII { public uint cbSize; public uint dwTime; }
+[DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LII p);
+public static uint Last() { var l = new LII(); l.cbSize = 8; GetLastInputInfo(ref l); return l.dwTime; }
+public static uint IdleMs() { return unchecked((uint)Environment.TickCount - Last()); }
+'@
+}
+
+switch ($Mode) {
+    'start' {
+        $in = Read-HookInput
+        # a saver killed mid-way left the screen dark: put the brightness back
+        if ((Test-Path $BrightFile) -and -not (Test-Saver)) { Set-Bright (Get-Content $BrightFile); Remove-Item $BrightFile }
+        $sid = if ($in.session_id) { $in.session_id } else { 'default' }
+        $flag = Join-Path $dir "$sid.flag"
+        $pidFile = Join-Path $dir "$sid.pid"
+        Set-Content $flag (Get-Date -Format o)
+        if (Test-Path $pidFile) {
+            $old = Get-Content $pidFile -ErrorAction SilentlyContinue
+            if ($old -and (Get-Process -Id $old -ErrorAction SilentlyContinue)) { exit 0 }  # already running
+        }
+        $exe = (Get-Process -Id $PID).Path
+        $p = Start-Process -FilePath $exe -WindowStyle Hidden -PassThru -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"",
+            'keeper', $sid, "`"$($in.transcript_path)`"")
+        Set-Content $pidFile $p.Id
+    }
+    'stop' {
+        $in = Read-HookInput
+        $sid = if ($in.session_id) { $in.session_id } else { 'default' }
+        Remove-Item (Join-Path $dir "$sid.flag") -ErrorAction SilentlyContinue
+    }
+    'keeper' {
+        Add-Type -Namespace KA -Name Power -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint esFlags);
+'@
+        Add-Input
+        Add-Type -AssemblyName System.Windows.Forms
+        $flag = Join-Path $dir "$SessionId.flag"
+        $started = Get-Date
+        $exe = (Get-Process -Id $PID).Path
+        # ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+        # = 0x80000003 as uint32. Plain 0x80000003 is a negative Int32 and the call throws silently
+        # (hidden window); the 0x...u suffix only exists in pwsh 7, this form works in 5.1 too.
+        [KA.Power]::SetThreadExecutionState([uint32]2147483651) | Out-Null
+        while ((Test-Path $flag) -and ((Get-Date) - $started).TotalHours -lt $MaxHours) {
+            if ($Transcript -and (Test-Path $Transcript)) {
+                $idle = (Get-Date) - (Get-Item $Transcript).LastWriteTime
+                if ($idle.TotalMinutes -gt $StaleMinutes) { break }
+            }
+            $limit = if ([Windows.Forms.SystemInformation]::PowerStatus.PowerLineStatus -eq 'Online') { $IdleAC } else { $IdleDC }
+            if ([KA.Input]::IdleMs() -ge $limit * 1000 -and -not (Test-Saver)) {
+                Start-Process -FilePath $exe -WindowStyle Hidden -ArgumentList @(
+                    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", 'saver', $limit)
+            }
+            Start-Sleep -Seconds 5
+        }
+        # the saver (if up) stays until the next input; Windows' own timeout takes over from here
+        [KA.Power]::SetThreadExecutionState([uint32]2147483648) | Out-Null
+        Remove-Item (Join-Path $dir "$SessionId.pid") -ErrorAction SilentlyContinue
+    }
+    'saver' {
+        # stage 1: brightness 0 (terminal still readable); stage 2, $SessionId seconds later:
+        # static black screen. Static on purpose: Claude Code's spinner keeps the panel
+        # refreshing, a still image lets the GPU stop (PSR). Black alone saves nothing on LCD.
+        $stage2 = [int]$SessionId
+        $created = $false
+        $mutex = New-Object Threading.Mutex($true, $SaverMutex, [ref]$created)
+        if (-not $created) { exit 0 }   # another session's saver is already up
+        Add-Input
+        Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+        $orig = Get-Bright   # whatever the user had (e.g. 50 at night), restored on input
+        if ($null -ne $orig) { Set-Content $BrightFile $orig; Set-Bright 0 }
+        $start = [KA.Input]::Last()
+        $t0 = Get-Date
+        $form = New-Object Windows.Forms.Form -Property @{
+            FormBorderStyle = 'None'; StartPosition = 'Manual'; TopMost = $true; ShowInTaskbar = $false
+            BackColor = [Drawing.Color]::Black; Bounds = [Windows.Forms.Screen]::PrimaryScreen.Bounds }
+        $form.Add_Paint({ param($s, $e)
+            $g = $e.Graphics; $g.SmoothingMode = 'AntiAlias'
+            $pen = New-Object Drawing.Pen ([Drawing.Color]::FromArgb(140, 70, 50), 6)   # dimmed Claude orange
+            $pen.StartCap = 'Round'; $pen.EndCap = 'Round'
+            $cx = $form.ClientSize.Width / 2; $cy = $form.ClientSize.Height / 2
+            for ($i = 0; $i -lt 12; $i++) {   # 12-ray spark, alternating lengths
+                $a = ($i * 30) * [Math]::PI / 180
+                $r = if ($i % 2) { 20 } else { 32 }
+                $g.DrawLine($pen, [float]($cx + 7 * [Math]::Cos($a)), [float]($cy + 7 * [Math]::Sin($a)),
+                                  [float]($cx + $r * [Math]::Cos($a)), [float]($cy + $r * [Math]::Sin($a)))
+            }
+            $pen.Dispose()
+        })
+        try {
+            while ([KA.Input]::Last() -eq $start) {
+                if (-not $form.Visible -and ((Get-Date) - $t0).TotalSeconds -ge $stage2) {
+                    $form.Show(); [Windows.Forms.Cursor]::Hide()
+                }
+                [Windows.Forms.Application]::DoEvents()
+                Start-Sleep -Milliseconds 250
+            }
+            $form.Close()
+        }
+        finally {
+            if ($null -ne $orig) { Set-Bright $orig }
+            Remove-Item $BrightFile -ErrorAction SilentlyContinue
+            $mutex.ReleaseMutex()
+        }
+    }
+}
+exit 0
