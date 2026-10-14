@@ -4,6 +4,9 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-14 — pasar de un kit antiguo al nuevo
+- **Si instalaste (o empezaste) un kit anterior a la v3** (zip `kit-claude-<nombre>-…` del 9 oct): `ACTUALIZAR.md` tiene una sección nueva, *Vienes de un kit antiguo*. Tu carpeta se queda como lab, el kit nuevo se clona dentro en `kit/`, se crea `kit-datos.yaml` a partir de tu informe, tus scripts parcheados se sustituyen por los del kit (ya traen los arreglos de Linux/Mac) y la instalación sigue desde la fase donde lo dejaste.
+
 ## 2026-10-10 — trucos de Codex
 - `guias/trucos.md`: sección nueva **Codex (plugin `codex`)**: cómo arreglar «blocked by policy» en Windows (`~/.codex/config.toml` con `[windows] sandbox = "unelevated"`), subir el esfuerzo por defecto, y por qué `--write` necesita un hilo nuevo. Solo te afecta si usas el plugin de Codex.
 

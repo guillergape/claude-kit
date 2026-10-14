@@ -11,6 +11,14 @@ Cuando la persona escriba `actualiza kit >` (o lo pida con otras palabras). **La
 4. **Idioma** (`IDIOMA` en `kit-datos.yaml`, regla 11 de `kit/CLAUDE.md`): si no es `es`, las copias instaladas de texto están traducidas. Entonces compáralas por contenido, no línea a línea, y aplica el cambio del kit **traducido**; el 🟢/🟡 sale de comparar con el `.kit-` o la copia que dejó la instalación, no con el kit en español.
 5. **Nunca edites `<LAB>/kit/`** salvo para ponerlo en la versión nueva (git pull / cambiar la carpeta del zip).
 
+## Vienes de un kit antiguo (sin `kit-datos.yaml`)
+Kits anteriores a la v3 (zip `kit-claude-<nombre>-…`, `VERSION.txt` de 2026-10-09 o sin él): la carpeta descomprimida hacía de lab y de kit a la vez, los scripts se usan desde ella y no hay `kit-datos.yaml` ni `instalado:`. Entonces no sigas los pasos 1–5 de abajo, sino esto (enséñale antes el plan, una línea por punto):
+1. **`<LAB>` = esa carpeta** (no la muevas: los hooks y la status line ya apuntan a ella). Clona el kit nuevo dentro: `git clone https://github.com/guillergape/claude-kit <LAB>/kit` (o el zip en `<LAB>/kit/`).
+2. **`kit-datos.yaml`** (fase 0, punto 4, de `kit/CLAUDE.md`): rellénalo con lo que ya dice su `INFORME_MIGRACION.md` (*Sistema*, selección de la fase 0) y pregunta solo lo que falte (`IDIOMA` lo primero). `instalado:` sale de la tabla *Cambios hechos fuera de la carpeta del lab* y de lo que dé ✅ o ⏳ en *Estado por fase*.
+3. **Scripts que ya usa** (`<LAB>/costlog/`, `skills/…` instaladas): compáralos con los de `kit/`. Los parches que apuntó en *Qué falló* casi siempre ya están en el kit nuevo: si su copia solo difiere en eso, sustitúyela (copia `.bak-` antes) y pasa su `--test`; si tiene más cambios suyos, fusión como en el paso 3 de abajo. Sus datos (`carpetas.json`, `moodle.json`, CSV) no se tocan. Las guías y plantillas viejas que no instaló se quedan donde están; ofrece mandarlas a la papelera al final.
+4. **Sigue la instalación** con `kit/CLAUDE.md` desde la primera fase que no esté ✅ en su informe (por nombre, no por número: las fases pueden haber cambiado). Lo ⏳ se retoma donde quedó.
+5. En el informe, sección *Actualizaciones*: «kit antiguo (<su versión>) → <versión nueva>», qué se sustituyó y qué se fusionó. Desde aquí, `actualiza kit >` ya va por los pasos normales.
+
 ## Paso 1 — Traer la versión nueva (si no se hizo ya)
 - **Con git** (`kit_commit` no vacío en `<LAB>/kit-datos.yaml`): `VIEJA = kit_commit`. Si `git -C <LAB>/kit status --porcelain` no está vacío, alguien editó el kit: enséñalo y pregunta antes de seguir (lo normal es mover esos cambios a la copia instalada y `git -C <LAB>/kit checkout -- .`). Luego `git -C <LAB>/kit pull --ff-only`. `NUEVA = HEAD`.
 - **Sin git**: el zip nuevo descomprimido en `<LAB>/kit-nuevo/` (dentro trae una carpeta: usa la que tenga `VERSION.txt`). `VIEJA = <LAB>/kit/`, `NUEVA = <LAB>/kit-nuevo/`.
