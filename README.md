@@ -4,7 +4,7 @@
 
 Tools and habits for working with Claude Code, with nothing personal from anyone. Most of the useful parts cost **0 tokens** (hooks and scripts do the work, not the model). Works on **Windows, Mac and Linux**: the install detects your system, asks for your details (name, email, university, Moodle, subjects…), saves them in one data file and fills everything in from there.
 
-**Language:** the kit files are written in Spanish, but you don't need to read them: your Claude reads them, talks to you in your language (English, German, …) and installs everything translated. Only the small script windows (e.g. `costlog>`, `send>`) stay in Spanish; Claude explains them the first time.
+**Language:** the kit files are written in Spanish, but you don't need to read them: your Claude reads them, talks to you in your language (English, German, …) and installs everything translated. The script windows and messages (e.g. `costlog>`, `send>`) come out in your language too (a small `textos.json` that Claude writes at install).
 
 ## Getting started
 1. Create a **fixed** folder for your Claude "lab" (not in Downloads), e.g. `~/claude-lab` (Windows: `C:\Users\<you>\claude-lab`).

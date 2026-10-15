@@ -4,6 +4,10 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-15 — ventanas de los scripts en tu idioma
+- **costlog/blocklog/send/modo carpeta** (`costlog/costlog.py`, `carpetas.py`, `send.py`): las ventanas y mensajes salen en tu idioma (`IDIOMA`). Nuevos `costlog/textos.py` (busca las traducciones; sin ellas, español) y `costlog/textos.en.json` (inglés). Al actualizar, copia los dos y, si tu `IDIOMA` no es `es`, tu Claude crea `<LAB>/costlog/textos.json` (fase 2, punto 1, de `kit/CLAUDE.md`). Los datos que se apuntan en `costlog.csv` / `blocklog.csv` no cambian.
+- Los demás scripts (`timelog.py`, `old.py`, `moodle.py`, `md2pdf.py`) ya escribían en inglés para Claude, que te lo cuenta en tu idioma.
+
 ## 2026-10-14 — pasar de un kit antiguo al nuevo
 - **Si instalaste (o empezaste) un kit anterior a la v3** (zip `kit-claude-<nombre>-…` del 9 oct): `ACTUALIZAR.md` tiene una sección nueva, *Vienes de un kit antiguo*. Tu carpeta se queda como lab, el kit nuevo se clona dentro en `kit/`, se crea `kit-datos.yaml` a partir de tu informe, tus scripts parcheados se sustituyen por los del kit (ya traen los arreglos de Linux/Mac) y la instalación sigue desde la fase donde lo dejaste.
 
@@ -13,7 +17,6 @@
 ## 2026-10-10 — inglés (y cualquier idioma)
 - **Idioma de la instalación:** la guía pregunta primero el idioma (`IDIOMA` en `kit-datos.yaml`), te habla en él y traduce lo que instala (CLAUDE.md global, guías, plantillas). Si ya tienes el kit, añade `IDIOMA: es` a tu `kit-datos.yaml`.
 - `README.md` en inglés para empezar; `actualiza kit >` aplica los cambios traducidos si tu copia no está en español.
-- Los textos de las ventanas de los scripts (`costlog>`, `send>`, `timelog`…) siguen en español.
 
 ## 2026-10-10 — versión 3: kit único
 - **Un solo kit para Windows, Mac y Linux.** Los scripts detectan el sistema; la guía pregunta solo lo que cambia (paquetes, `python`/`python3`, keep-awake, rutas de Whisper).

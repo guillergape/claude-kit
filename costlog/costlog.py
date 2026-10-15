@@ -22,6 +22,10 @@ try:
 except ImportError:
     send = None
 import carpetas  # folder mode `_<carpeta>:` (same folder, configured in carpetas.json)
+try:
+    from textos import T  # texts in the person's language (textos.json next to this file); Spanish without it
+except ImportError:
+    T = lambda s, **k: s.format(**k) if k else s
 from collections import Counter
 from datetime import datetime
 
@@ -42,11 +46,12 @@ BLOCK = re.compile(r"auto mode classifier|safety check|protected from removal|^<
 
 
 def locked(path):
-    return f"{os.path.basename(path)} está abierto (¿Excel?) y no se puede escribir: ciérralo y pulsa Apuntar otra vez."
+    return T("{f} está abierto (¿Excel?) y no se puede escribir: ciérralo y pulsa Apuntar otra vez.",
+             f=os.path.basename(path))
 
 
 LOCKED = locked(LOG_CSV)
-WINDOWS = (("5h", "5h", "el de 5 h"), ("7d", "sem", "el semanal"))
+WINDOWS = (("5h", "5h", T("el de 5 h")), ("7d", "sem", T("el semanal")))
 
 
 def grade(t, pdf=False):
@@ -219,9 +224,10 @@ def par_estimate(u):
 def par_fields(u):
     v, k = par_estimate(u)
     n = u.get("others")
-    return [("u5h", "Usage 5h (%)", "" if v is None else f"{v:g}", (f"{n} chat(s) más" if n else "Otros chats") +
-             " a la vez: el % medido no es solo de este. Estimación = $ de este chat × " +
-             (f"{k:.2f} %/$ (mediana de las sesiones sin paralelo)" if k else "? (aún no hay datos)") + ". Opcional.", True)]
+    who = T("{n} chat(s) más", n=n) if n else T("Otros chats")
+    est = T("{k:.2f} %/$ (mediana de las sesiones sin paralelo)", k=k) if k else T("? (aún no hay datos)")
+    return [("u5h", "Usage 5h (%)", "" if v is None else f"{v:g}", T(
+        "{who} a la vez: el % medido no es solo de este. Estimación = $ de este chat × {est}. Opcional.", who=who, est=est), True)]
 
 
 def num(x):
@@ -233,14 +239,14 @@ def usage_text(u, mins):
     for k, lab, _ in WINDOWS:
         x, y = u.get(k, (None, None))
         if x is not None or y is not None:
-            parts.append(f"{lab} {num(x)}%→{num(y)}%" + (" ⚠reinicio a mitad" if u.get(k + "_reset") else ""))
+            parts.append(f"{lab} {num(x)}%→{num(y)}%" + (" " + T("⚠reinicio a mitad") if u.get(k + "_reset") else ""))
     if u.get("cost") is not None:
         parts.append(f"${u['cost']:.2f}")
     if mins is not None:
         parts.append(f"{mins:g} min")
     if u.get("parallel"):
         n = u.get("others")
-        parts.append(f"⚠{f'{n} chat(s)' if n else 'chats'} en paralelo: % no fiable")
+        parts.append(T("⚠{who} en paralelo: % no fiable", who=f"{n} chat(s)" if n else "chats"))
     return ", ".join(parts) or "?"
 
 
@@ -254,16 +260,18 @@ def usage_fields(u):
         x, y = u.get(k, (None, None))
         p = u.get(k + "_pre")
         if u.get(k + "_reset") and None not in (p, x, y):
-            fields.append(("u" + k, f"Usage {lab} (%)", f"{p - x + y:g}", f"Se reinició {name} a mitad de la sesión: "
-                           f"{num(x)}%→{num(p)}% antes y 0%→{num(y)}% después. Estimación = la suma; aproximada si "
-                           "había otros chats a la vez. Cámbiala si quieres (opcional).", True))
+            fields.append(("u" + k, f"Usage {lab} (%)", f"{p - x + y:g}", T(
+                "Se reinició {name} a mitad de la sesión: {x}%→{p}% antes y 0%→{y}% después. Estimación = la suma; "
+                "aproximada si había otros chats a la vez. Cámbiala si quieres (opcional).",
+                name=name, x=num(x), p=num(p), y=num(y)), True))
         elif u.get(k + "_reset"):
-            fields.append(("u" + k, f"Usage {lab} (%)", "", f"Se reinició {name} a mitad de la sesión: lo medido "
-                           f"({num(x)}%→{num(y)}%) no dice cuánto gastó. Pon tu estimación (opcional).", True))
+            fields.append(("u" + k, f"Usage {lab} (%)", "", T(
+                "Se reinició {name} a mitad de la sesión: lo medido ({x}%→{y}%) no dice cuánto gastó. Pon tu "
+                "estimación (opcional).", name=name, x=num(x), y=num(y)), True))
         else:
             d = f"{y - x:g}" if x is not None and y is not None else ""
-            fields.append(("u" + k, f"Usage {lab} (%)", d, f"No se reinició: relleno con lo medido ({num(x)}%→{num(y)}%). "
-                           "Opcional.", False))
+            fields.append(("u" + k, f"Usage {lab} (%)", d, T(
+                "No se reinició: relleno con lo medido ({x}%→{y}%). Opcional.", x=num(x), y=num(y)), False))
     return fields
 
 
@@ -297,14 +305,14 @@ def form(title, fields, check, save, error=""):
         try:
             save(vals)
         except OSError as e:
-            err["text"] = locked(e.filename or "el CSV")
+            err["text"] = locked(e.filename or T("el CSV"))
             return
         root.destroy()
 
     bar = tk.Frame(root)
     bar.grid(row=21, column=0, columnspan=3, pady=10)
-    tk.Button(bar, text="Apuntar (Enter)", command=ok).pack(side="left", padx=5)
-    tk.Button(bar, text="Cancelar (Esc)", command=root.destroy).pack(side="left", padx=5)
+    tk.Button(bar, text=T("Apuntar (Enter)"), command=ok).pack(side="left", padx=5)
+    tk.Button(bar, text=T("Cancelar (Esc)"), command=root.destroy).pack(side="left", padx=5)
     root.bind("<Return>", ok)
     root.bind("<Escape>", lambda e: root.destroy())
     first_empty = next((e for f, e in zip(fields, entries) if not f[2]), entries[0])
@@ -314,22 +322,23 @@ def form(title, fields, check, save, error=""):
 
 def cost_form(pre, extra, save):
     """extra: additional fields, e.g. the usage estimate after a mid-session reset."""
-    fields = [("task", "Tarea", pre.get("task", ""), "Viene del título del chat; cámbialo si no dice qué se hizo. Corto: "
-               "área/asignatura + comando + ref, p. ej. «Prog práctica 2», «Gmail: borrador al profe de Cálculo».", False),
-              ("ses", "Nota sesión", pre.get("ses", ""), "1–5 (vale 4.5).", False),
-              ("pdf", "Nota PDF", pre.get("pdf", ""), "1–5 · - o NA si no hay PDF que valorar · pendiente.", False),
-              ("corr", "Correcciones", pre.get("corr", ""), "Nº de respuestas que tuviste que corregir o repedir (? si no lo sabes).", False),
-              ("note", "Nota libre", pre.get("note", ""), "Qué fue bien / mal (opcional).", False)] + extra
+    fields = [("task", T("Tarea"), pre.get("task", ""), T("Viene del título del chat; cámbialo si no dice qué se hizo. "
+               "Corto: área/asignatura + comando + ref, p. ej. «Prog práctica 2», «Gmail: borrador al profe de Cálculo»."), False),
+              ("ses", T("Nota sesión"), pre.get("ses", ""), T("1–5 (vale 4.5)."), False),
+              ("pdf", T("Nota PDF"), pre.get("pdf", ""), T("1–5 · - o NA si no hay PDF que valorar · pendiente."), False),
+              ("corr", T("Correcciones"), pre.get("corr", ""),
+               T("Nº de respuestas que tuviste que corregir o repedir (? si no lo sabes)."), False),
+              ("note", T("Nota libre"), pre.get("note", ""), T("Qué fue bien / mal (opcional)."), False)] + extra
 
     def check(f):
         s, p = grade(f["ses"]), grade(f["pdf"], pdf=True)
         if not s:
-            return "Nota sesión: un número del 1 al 5"
+            return T("Nota sesión: un número del 1 al 5")
         if not p:
-            return "Nota PDF: 1–5, o - / NA si no hay PDF, o pendiente"
+            return T("Nota PDF: 1–5, o - / NA si no hay PDF, o pendiente")
         f.update(ses=s, pdf=p)
 
-    form(f"costlog> — {pre.get('task') or 'apuntar en costlog'}", fields, check, save, pre.get("err", ""))
+    form(f"costlog> — {pre.get('task') or T('apuntar en costlog')}", fields, check, save, pre.get("err", ""))
 
 
 def gather(hook):
@@ -354,7 +363,7 @@ def build(ctx, f):
     if not manual and u.get("parallel"):
         v, k = par_estimate(u)
         manual = f"≈{v:g}% 5h (${u['cost']:.2f} × {k:.2f} %/$, paralelo)" if v is not None else ""
-    usage = usage_text(u, st["minutes"]) + (f" · tu estimación: {manual}" if manual else "")
+    usage = usage_text(u, st["minutes"]) + (" · " + T("tu estimación: {m}", m=manual) if manual else "")
     line = f"{date} · {task} ({project}) · {st['model_effort']} · {st['prompts']} · {corr} · {f['ses']} · {f['pdf']} · {usage} · {note}"
     h5, wk = u.get("5h", (None, None)), u.get("7d", (None, None))
     row = [date, ctx["sid"], project, task, st["model_effort"], st["prompts"], corr, f["ses"], f["pdf"],
@@ -404,7 +413,7 @@ def leftover(argv):
     try:
         append(row)
     except OSError:
-        sys.exit("NOT LOGGED: " + LOCKED.replace(" y pulsa Apuntar otra vez", "") + "\n" + line)
+        sys.exit(f"NOT LOGGED: {os.path.basename(LOG_CSV)} is open (Excel?) and can't be written.\n{line}")
     print("logged:", line)
 
 
@@ -534,24 +543,24 @@ def block_save(ctx, f):
 
 def block_form(ctx, pre):
     n = ctx["n"]
-    found = "Sacado del chat; cámbialo si hace falta." if n else "No lo encontré en el chat: rellénalo a mano."
-    fields = [("time", "Cuándo", pre.get("time", ""), "Hora (HH:MM). " + (found if n else
-               f"Si no fue hoy ({ctx['date']}), pon también el día."), not n),
-              ("tipo", "Tipo", pre.get("tipo", ""), "outage clasificador (no verdict) · denegado [motivo] · "
-               "safety check · shell colgado · otro.", not n),
-              ("bloqueado", "Qué se bloqueó", pre.get("bloqueado", ""), "Herramienta: comando. " + found, not n),
-              ("error", "Error", pre.get("error", ""), "Texto exacto del error (primeras frases). " + found, not n),
-              ("intento", "Qué se intentó", pre.get("intento", ""), "Reintentos, ! comando, Shift+Tab a modo manual, "
-               "regla en settings… (opcional).", False),
-              ("solucion", "Solución", pre.get("solucion", ""), "Cómo se arregló, o «sin resolver».", False)]
+    found = T("Sacado del chat; cámbialo si hace falta.") if n else T("No lo encontré en el chat: rellénalo a mano.")
+    fields = [("time", T("Cuándo"), pre.get("time", ""), T("Hora (HH:MM).") + " " + (found if n else
+               T("Si no fue hoy ({d}), pon también el día.", d=ctx["date"])), not n),
+              ("tipo", T("Tipo"), pre.get("tipo", ""), T("outage clasificador (no verdict) · denegado [motivo] · "
+               "safety check · shell colgado · otro."), not n),
+              ("bloqueado", T("Qué se bloqueó"), pre.get("bloqueado", ""), T("Herramienta: comando.") + " " + found, not n),
+              ("error", T("Error"), pre.get("error", ""), T("Texto exacto del error (primeras frases).") + " " + found, not n),
+              ("intento", T("Qué se intentó"), pre.get("intento", ""), T("Reintentos, ! comando, Shift+Tab a modo "
+               "manual, regla en settings… (opcional)."), False),
+              ("solucion", T("Solución"), pre.get("solucion", ""), T("Cómo se arregló, o «sin resolver»."), False)]
 
     def check(f):
         if not f["bloqueado"]:
-            return "Qué se bloqueó: pon al menos la herramienta o el comando."
+            return T("Qué se bloqueó: pon al menos la herramienta o el comando.")
         if not f["solucion"]:
-            return "Solución: cómo se arregló, o «sin resolver»."
+            return T("Solución: cómo se arregló, o «sin resolver».")
 
-    form(f"blocklog> — {n} bloqueo(s) en {ctx['project']}", fields, check, lambda f: block_save(ctx, f),
+    form(T("blocklog> — {n} bloqueo(s) en {p}", n=n, p=ctx["project"]), fields, check, lambda f: block_save(ctx, f),
          pre.get("err", ""))
 
 
@@ -568,14 +577,15 @@ def block_main(hook, args):
            "model_effort": g["st"]["model_effort"], "n": len(bs), "until": pre.pop("until", "")}
     if bs and pre["solucion"]:
         try:
-            reply("✅ apuntado en blocklog.csv:\n" + block_save(ctx, pre))
+            reply(T("✅ apuntado en {f}:", f="blocklog.csv") + "\n" + block_save(ctx, pre))
         except OSError:
             pre["err"] = locked(BLOG_CSV)
     spawn({"kind": "block", "ctx": ctx, "pre": pre})
-    reply("📝 blocklog>: ventana abierta (puedes minimizarla). "
-          + (f"Encontré {len(bs)} bloqueo(s) nuevo(s) en este chat, ya rellenados." if bs
-             else "No encontré bloqueos nuevos en este chat: rellénalo a mano.")
-          + (" ⚠ blocklog.csv está abierto (¿Excel?): ciérralo antes de pulsar Apuntar." if pre.get("err") else ""))
+    reply(T("📝 blocklog>: ventana abierta (puedes minimizarla).") + " "
+          + (T("Encontré {n} bloqueo(s) nuevo(s) en este chat, ya rellenados.", n=len(bs)) if bs
+             else T("No encontré bloqueos nuevos en este chat: rellénalo a mano."))
+          + (" " + T("⚠ {f} está abierto (¿Excel?): ciérralo antes de pulsar Apuntar.", f="blocklog.csv")
+             if pre.get("err") else ""))
 
 
 def first_prompt(sid):
@@ -602,8 +612,9 @@ def main():
     s = send and send.TRIGGER.match(hook.get("prompt", ""))
     if s:
         detach([sys.executable, send.__file__, "--window", s[1] or ""])
-        reply("📨 send>: ventana de borradores abierta" + (f" (primero los que contienen «{s[1].strip()}»)"
-                                                         if (s[1] or "").strip() else "") + ". Envías tú con el botón.")
+        kw = (s[1] or "").strip()
+        reply(T("📨 send>: ventana de borradores abierta (primero los que contienen «{kw}»). Envías tú con el botón.", kw=kw)
+              if kw else T("📨 send>: ventana de borradores abierta. Envías tú con el botón."))
     b = BTRIGGER.match(hook.get("prompt", ""))
     if b:
         block_main(hook, b[1])
@@ -622,20 +633,23 @@ def main():
         line, row = build(ctx, pre)
         try:
             append(row)
-            reply("✅ apuntado en costlog.csv:\n" + line)
+            reply(T("✅ apuntado en {f}:", f="costlog.csv") + "\n" + line)
         except OSError:
             pre["err"] = LOCKED
     pre["task"] = ctx["st"]["title"]
     spawn({"kind": "cost", "ctx": ctx, "pre": pre})
-    reply("📝 costlog>: ventana abierta (puedes minimizarla y rellenarla cuando quieras); los datos de uso quedan "
-          "congelados ahora. Se apunta en costlog.csv al pulsar Apuntar."
-          + (" ⚠ Hubo un reinicio de límite: pon el usage aproximado." if reset else "")
-          + (" ⚠ Otros chats a la vez: usage estimado a partir del $ de este chat." if u["parallel"] else "")
-          + (" ⚠ costlog.csv está abierto (¿Excel?): ciérralo antes de pulsar Apuntar." if pre.get("err") else ""))
+    reply(T("📝 costlog>: ventana abierta (puedes minimizarla y rellenarla cuando quieras); los datos de uso quedan "
+            "congelados ahora. Se apunta en costlog.csv al pulsar Apuntar.")
+          + (" " + T("⚠ Hubo un reinicio de límite: pon el usage aproximado.") if reset else "")
+          + (" " + T("⚠ Otros chats a la vez: usage estimado a partir del $ de este chat.") if u["parallel"] else "")
+          + (" " + T("⚠ {f} está abierto (¿Excel?): ciérralo antes de pulsar Apuntar.", f="costlog.csv")
+             if pre.get("err") else ""))
 
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--test"]:
+        if "textos" in sys.modules:
+            sys.modules["textos"].TX.clear()  # the asserts below expect the Spanish texts
         assert parse("4 5 se dejó X") == ({"ses": "4", "pdf": "5", "note": "se dejó X"}, True)
         assert parse("4 NA") == ({"ses": "4", "pdf": "—", "note": ""}, True)
         assert parse("4,5 - bien") == ({"ses": "4.5", "pdf": "—", "note": "bien"}, True)

@@ -13,6 +13,10 @@ doesn't start folder mode and, if not found in the current project or step1, the
 """
 import json, os, re, sys, threading, time, unicodedata
 from itertools import combinations
+try:
+    from textos import T  # texts in the person's language (textos.json next to this file); Spanish without it
+except ImportError:
+    T = lambda s, **k: s.format(**k) if k else s
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,7 +27,8 @@ def load_cfg(path=os.path.join(HERE, "carpetas.json")):
     try:
         c = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError):
-        c = {"step1": [["Descargas", "~/Downloads"]], "step2": [["Documentos", "~/Documents"], ["Escritorio", "~/Desktop"]]}
+        c = {"step1": [[T("Descargas"), "~/Downloads"]],
+             "step2": [[T("Documentos"), "~/Documents"], [T("Escritorio"), "~/Desktop"]]}
     rows = lambda k: [(n, os.path.normpath(os.path.expanduser(p))) for n, p in c.get(k, [])]
     return sorted(rows("projects"), key=lambda r: -len(r[1])), rows("step1"), rows("step2")
 
@@ -143,8 +148,8 @@ def search(typed, roots, others):
 
 
 def listing(raw, what, lines):
-    return (f"⚠ Hay varias carpetas {what} ({len(lines)}), por eso sale este listado. "
-            "Copia el prompt de la que quieres:\n\n" + "\n".join(lines))
+    return (T("⚠ Hay varias carpetas {what} ({n}), por eso sale este listado. Copia el prompt de la que quieres:",
+              what=what, n=len(lines)) + "\n\n" + "\n".join(lines))
 
 
 def enter(raw, root, typed, cur, note="", qq=False):
@@ -153,15 +158,16 @@ def enter(raw, root, typed, cur, note="", qq=False):
     pre = "" if path == cur else norm(name) + "_"
     if len(hits) > 1:
         exact = any(fits(c, expand(typed, al)[0].split("_"), eq=True) for c, _ in hits)
-        what = f"con el nombre «{raw}»" if exact else f"que empiezan por «{raw}»"
+        what = T("con el nombre «{raw}»", raw=raw) if exact else T("que empiezan por «{raw}»", raw=raw)
         return block((note + "\n\n" if note else "") + listing(raw, what, [
             f"- {tag(pre + prompt(allf, c, al), qq)} → {name}/{rel}" if pre else f"- {tag(prompt(allf, c, al), qq)} → {rel}"
             for c, rel in hits]))
     rel = hits[0][1]
     full = os.path.normpath(os.path.join(path, rel))
+    line1 = T("Modo {f}/ — solo aquí. Salir: exit > · cambiar: _<carpeta>:", f=rel or name)
     ctx = (f"📁 Folder mode, resolved by the hook (don't run carpetas.py): «{raw}» = {full}. Follow the folder-mode "
            f"rules of the CLAUDE.md that applies there, if any; if there are none: first line "
-           f"`Modo {rel or name}/ — solo aquí. Salir: exit > · cambiar: _<carpeta>:`, read that folder's CLAUDE.md if "
+           f"`{line1}`, read that folder's CLAUDE.md if "
            f"it has one, no session start, work only there; the mode lasts until `exit >` or another `_<carpeta>:`.")
     if qq:
         ctx = (f"📁 Quick question about a folder, resolved by the hook (don't run carpetas.py): «{raw}» = {full}. "
@@ -185,10 +191,11 @@ def block(text):
 
 def found(raw, typed, res, cur, where, qq=False):
     if len(res) == 1:
-        enter(raw, res[0], typed, cur, f"📁 «{raw}» no está en {where}; está en {res[0][0]}.", qq)
-    return block(f"📁 «{raw}» no está en {where}. Está en varios sitios; dime cuál con su prompt:\n\n"
-                 + "\n".join(f"- {tag(norm(n) + '_' + typed, qq)} → {n} ({len(h)} carpeta{'s' * (len(h) > 1)})"
-                             for n, _, _, _, h in res))
+        enter(raw, res[0], typed, cur, T("📁 «{raw}» no está en {where}; está en {r}.", raw=raw, where=where, r=res[0][0]), qq)
+    return block(T("📁 «{raw}» no está en {where}. Está en varios sitios; dime cuál con su prompt:", raw=raw, where=where)
+                 + "\n\n" + "\n".join(f"- {tag(norm(n) + '_' + typed, qq)} → {n} ("
+                                      + (T("{n} carpetas", n=len(h)) if len(h) > 1 else T("1 carpeta")) + ")"
+                                      for n, _, _, _, h in res))
 
 
 def state_path(sid):
@@ -199,28 +206,29 @@ def ask(sid, st, text):
     os.makedirs(STATE, exist_ok=True)
     with open(state_path(sid), "w", encoding="utf-8") as f:
         json.dump(dict(st, t=time.time()), f)
-    block(text + "\n\n`y` = sí · `n` = no, paro")
+    block(text + "\n\n" + T("`y` = sí · `n` = no, paro"))
 
 
 def answer(sid, st, a):
     os.remove(state_path(sid))
     raw, typed, cur, cname = st["raw"], st["typed"], st["cur"], st["cname"]
     if a in NO:
-        block("Vale, no busco más. Te espero.")
+        block(T("Vale, no busco más. Te espero."))
     if st["stage"] == 1:
         done = [(cname, cur)] + STEP1
         res = search(typed, [r for r in STEP2 if r[1] != cur], done + STEP2)
         if res:
-            found(raw, typed, res, cur, f"{cname} ni en {', '.join(n for n, p in STEP1 if p != cur)}")
-        ask(sid, dict(st, stage=2), f"📁 «{raw}» tampoco está en {', '.join(n for n, _ in STEP2) or 'los sitios configurados'}. "
-                                    f"¿Busco en todo el ordenador ({', '.join(DRIVES())})? Tarda unos minutos y "
-                                    f"el resultado sale en una ventana.")
+            found(raw, typed, res, cur, T("{a} ni en {b}", a=cname, b=", ".join(n for n, p in STEP1 if p != cur)))
+        ask(sid, dict(st, stage=2), T("📁 «{raw}» tampoco está en {where}. ¿Busco en todo el ordenador ({drives})? Tarda "
+                                      "unos minutos y el resultado sale en una ventana.", raw=raw,
+                                      where=", ".join(n for n, _ in STEP2) or T("los sitios configurados"),
+                                      drives=", ".join(DRIVES())))
     import subprocess
     kw = (dict(creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP) if os.name == "nt"
           else dict(start_new_session=True))
     subprocess.Popen([sys.executable, os.path.abspath(__file__), "--everywhere", raw], **kw,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, close_fds=True)
-    block(f"🔎 Buscando «{raw}» en todo el ordenador. Saldrá una ventana con el resultado.")
+    block(T("🔎 Buscando «{raw}» en todo el ordenador. Saldrá una ventana con el resultado.", raw=raw))
 
 
 def hook(h):
@@ -251,7 +259,7 @@ def hook(h):
         res = search(rest, [(name, path)], STEP1 + STEP2)  # same skips as the automatic search
         if res:
             enter(raw, res[0], rest, cur, qq=qq)
-        block(f"📁 «{rest}» no está en {name}.")
+        block(T("📁 «{raw}» no está en {where}.", raw=rest, where=name))
     first = [(cname, cur)] + [r for r in STEP1 if r[1] != cur]
     res = search(typed, first[:1], first)
     if res:
@@ -263,8 +271,8 @@ def hook(h):
         return  # "<whatever> qq >" that isn't a folder nearby: plain qq, no y/n search outside
     where2 = f" ({', '.join(n for n, _ in STEP2)})" if STEP2 else ""
     ask(sid, {"stage": 1, "raw": raw, "typed": typed, "cur": cur, "cname": cname},
-        f"📁 Carpeta «{raw}» no encontrada en {cname} ni en {', '.join(n for n, _ in first[1:])}. "
-        f"¿Busco fuera{where2}?")
+        T("📁 Carpeta «{raw}» no encontrada en {a} ni en {b}. ¿Busco fuera{c}?", raw=raw, a=cname,
+          b=", ".join(n for n, _ in first[1:]), c=where2))
 
 
 def everywhere(raw):
@@ -272,10 +280,10 @@ def everywhere(raw):
     import tkinter as tk
     typed = norm(raw)
     win = tk.Tk()
-    win.title(f"Buscar carpeta «{raw}» en todo el ordenador")
+    win.title(T("Buscar carpeta «{raw}» en todo el ordenador", raw=raw))
     txt = tk.Text(win, width=110, height=30, font=("Consolas", 10))
     txt.pack(fill="both", expand=True)
-    txt.insert("end", f"Buscando «{raw}» en {', '.join(DRIVES())}…\n")
+    txt.insert("end", T("Buscando «{raw}» en {drives}…", raw=raw, drives=", ".join(DRIVES())) + "\n")
     out = []
 
     def work():
@@ -290,7 +298,7 @@ def everywhere(raw):
         if not out:
             return win.after(500, poll)
         hits = out[0]
-        txt.insert("end", (f"Encontrada en {len(hits)} sitio(s):\n\n" if hits else "No está en ningún sitio.\n")
+        txt.insert("end", (T("Encontrada en {n} sitio(s):", n=len(hits)) + "\n\n" if hits else T("No está en ningún sitio.") + "\n")
                    + "\n".join(rel.replace("/", os.sep) for _, rel in hits[:500]))
 
     poll()
