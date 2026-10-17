@@ -4,6 +4,13 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-17 — Mac (probado en un Mac real)
+- **md2pdf** (`skills/md2pdf/md2pdf.py`): en Mac, Chrome escribe el PDF y no se cierra; md2pdf se colgaba 3 min y fallaba. Ahora vigila hasta que el PDF (o el volcado de la página) está listo y cierra Chrome: unos segundos. Windows igual que antes. Edge de Mac añadido a la lista de navegadores.
+- **Python en Mac** (tabla *Por sistema operativo* de `CLAUDE.md`): ruta absoluta de un Python ≥ 3.10 con tkinter, nunca `/usr/bin/python3` (3.9 de Apple). Si tus hooks usan `python3` y te funcionan, no hace falta cambiar nada.
+- **keep-awake en Mac:** normalmente no hace falta (Claude Code ya lanza su `caffeinate`); `hooks/keep-awake.md`.
+- **modo carpeta** (`costlog/carpetas.py`): en Mac/Linux la búsqueda en todo el ordenador salta `~/Library` y `~/.Trash`.
+- Avisos de Mac en la tabla: permiso de privacidad para «Python» la 1.ª vez; Whisper con un Python muy nuevo → venv con 3.12.
+
 ## 2026-10-15 — ventanas de los scripts en tu idioma
 - **costlog/blocklog/send/modo carpeta** (`costlog/costlog.py`, `carpetas.py`, `send.py`): las ventanas y mensajes salen en tu idioma (`IDIOMA`). Nuevos `costlog/textos.py` (busca las traducciones; sin ellas, español) y `costlog/textos.en.json` (inglés). Al actualizar, copia los dos y, si tu `IDIOMA` no es `es`, tu Claude crea `<LAB>/costlog/textos.json` (fase 2, punto 1, de `kit/CLAUDE.md`). Los datos que se apuntan en `costlog.csv` / `blocklog.csv` no cambian.
 - Los demás scripts (`timelog.py`, `old.py`, `moodle.py`, `md2pdf.py`) ya escribían en inglés para Claude, que te lo cuenta en tu idioma.

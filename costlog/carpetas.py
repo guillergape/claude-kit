@@ -39,6 +39,7 @@ STATE = os.path.expanduser("~/.claude/costlog-state")
 PREFIX = re.compile(r"^_([^\\/:\n?¿!¡,;\"'<>`|*]{1,80}):(?![\\/])")
 QQ = re.compile(r"^_?([^\\/:\n?¿!¡,;\"'<>`|*]{1,80}?)\s+(?:qq|quickq|quickquestion)\s*>", re.I)
 DRIVES = getattr(os, "listdrives", lambda: [os.path.expanduser("~")])  # Mac/Linux: home, not / (/proc, /sys…)
+SKIP_EVERYWHERE = [os.path.expanduser(p) for p in ("~/Library", "~/.Trash")] if os.name != "nt" else []  # Mac: huge + privacy prompts
 YES, NO = {"y", "s", "si", "sí", "yes"}, {"n", "no"}
 
 
@@ -289,7 +290,7 @@ def everywhere(raw):
     def work():
         allf = []
         for d in DRIVES():
-            allf += [((norm(d.rstrip("\\/")),) + c, os.path.join(d, rel)) for c, rel in walk(d, hidden=False)]
+            allf += [((norm(d.rstrip("\\/")),) + c, os.path.join(d, rel)) for c, rel in walk(d, SKIP_EVERYWHERE, hidden=False)]
         out.append(resolve(allf, typed))
 
     threading.Thread(target=work, daemon=True).start()

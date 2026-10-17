@@ -30,6 +30,7 @@ BROWSERS = [
     Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
     Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
     Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+    Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
     Path("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"),
 ] + [Path(p) for p in map(shutil.which, ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
                                          "microsoft-edge", "microsoft-edge-stable", "brave", "brave-browser")) if p]
@@ -395,6 +396,46 @@ def build_html(md_path, keep_max=KEEP_MAX):
 <style>{CSS}</style>{script}</head><body>{body}</body></html>""", len(store), text, body
 
 
+def run_browser(cmd, done, timeout=180):
+    """Run a headless browser and return its stdout. Windows: wait for it to exit. macOS/Linux: Chrome (154 on macOS,
+    2026-10-09) writes the PDF / dumps the DOM and then never exits, so poll until done(stdout_so_far) and
+    stop it ourselves (4 s instead of a 180 s hang)."""
+    if os.name == "nt":
+        try:
+            return subprocess.run(cmd, capture_output=True, timeout=timeout, env=BROWSER_ENV,
+                                  encoding="utf-8", errors="replace").stdout or ""
+        except subprocess.TimeoutExpired:
+            print(f"  note: {Path(cmd[0]).name} hung for {timeout} s")
+            return ""
+    with tempfile.TemporaryFile("w+", encoding="utf-8", errors="replace") as out:
+        p = subprocess.Popen(cmd, stdout=out, stderr=subprocess.DEVNULL, env=BROWSER_ENV)
+        end = time.time() + timeout
+        while p.poll() is None and time.time() < end:
+            time.sleep(0.5)
+            out.seek(0)
+            if done(out.read()):
+                break
+        if p.poll() is None:
+            p.terminate()
+            try:
+                p.wait(5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+        out.seek(0)
+        return out.read()
+
+
+def pdf_ready(pdf):
+    """done() for run_browser: the PDF exists, is not empty and its size didn't change in the last 0.5 s."""
+    sizes = []
+
+    def done(_):
+        sizes.append(pdf.stat().st_size if pdf.exists() else 0)
+        return len(sizes) >= 2 and sizes[-1] > 0 and sizes[-1] == sizes[-2]
+    return done
+
+
 def check_render(browser, page, tmp, n_math, text, body):
     """Render the page again, dump the final DOM and report problems as (level, message).
     WARNING = definitely broken (exit code 1); CHECK = probably wrong, worth a look."""
@@ -404,10 +445,10 @@ def check_render(browser, page, tmp, n_math, text, body):
     # A line break inside a paragraph followed by a bold lead-in is almost always two paragraphs run together
     for m in re.finditer(r"(?:[^>\s]|</(?:strong|em|span|a|code)>)\n<strong>(.{1,60}?)</strong>", body):
         problems.append(("CHECK", f"paragraphs run together before **{html.unescape(m.group(1))}** (add a blank line, or a '>' line inside a blockquote)"))
-    dom = subprocess.run(
+    dom = run_browser(
         [str(browser), "--headless=new", "--disable-gpu", f"--user-data-dir={tmp / 'profile2'}",
          "--virtual-time-budget=20000", "--dump-dom", page.as_uri()],
-        capture_output=True, timeout=180, env=BROWSER_ENV, encoding="utf-8", errors="replace").stdout
+        lambda s: "</html>" in s)
     dom = re.sub(r"<script.*?</script>", "", dom, flags=re.S)
     errors = [html.unescape(e) for e in re.findall(r'katex-error-box">(.*?)</span>', dom)]
     if n_math and ('class="katex"' not in dom or any("katex is not defined" in e for e in errors)):
@@ -445,10 +486,7 @@ def convert(md_path):
             cmd = [str(browser), "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
                    f"--user-data-dir={tmp / ('profile-' + browser.stem)}", "--virtual-time-budget=20000",
                    f"--print-to-pdf={tmp_pdf}", page.as_uri()]
-            try:
-                subprocess.run(cmd, capture_output=True, timeout=180, env=BROWSER_ENV)
-            except subprocess.TimeoutExpired:
-                print(f"  note: {browser.name} hung for 180 s")
+            run_browser(cmd, pdf_ready(tmp_pdf))
             for _ in range(20):  # safety net in case a browser still detaches: wait up to 10 s for the PDF
                 if tmp_pdf.exists() and tmp_pdf.stat().st_size:
                     break

@@ -30,7 +30,7 @@ Eres el Claude Code de la persona que ha recibido este kit. Su autor ha montado 
 | `costlog/costlog.py` | Hook `UserPromptSubmit`: `costlog>` (coste/notas por sesión), `blocklog>` (bloqueos), `send>` y modo carpeta | 0 | Python 3.10+ con tkinter | `costlog.md` |
 | `costlog/carpetas.py` | Modo carpeta `_<carpeta>:` (resuelve la carpeta sin tokens, lista duplicados, busca fuera con y/n) y `<carpeta> qq >` | 0 | `carpetas.json` | docstring |
 | `costlog/send.py` | `send>`: ventana para revisar y enviar borradores de Gmail; `--send` para «envíalo tú» | 0 | MCP `google-workspace` autorizado | `guias/email.md` |
-| `hooks/keep-awake` | Que el portátil no se suspenda mientras Claude trabaja (baja brillo y pone negro en vez de apagar) | 0 | **Windows**, portátil (Mac/Linux: solo la idea) | `hooks/keep-awake.md` |
+| `hooks/keep-awake` | Que el portátil no se suspenda mientras Claude trabaja (baja brillo y pone negro en vez de apagar) | 0 | **Windows**, portátil (Mac: no hace falta; Linux: solo la idea) | `hooks/keep-awake.md` |
 | `skills/md2pdf` | Markdown + LaTeX → PDF A4 con comprobaciones automáticas | — | Chrome, Chromium o Edge (Brave no), `markdown-it-py`, `pymupdf`, internet (KaTeX) | SKILL.md |
 | `skills/commands` | `/commands`: lista los comandos que tienes en la carpeta actual | — | Bash | SKILL.md |
 | `skills/progress` | `progress >`: guarda un punto de control en memoria | — | — | SKILL.md |
@@ -47,19 +47,20 @@ Solo lo que cambia. `SO` y `PY` se apuntan en `kit-datos.yaml` en la fase 0 y de
 
 | | Windows | Mac | Linux |
 |---|---|---|---|
-| Python (`PY`) | `python` (que no sea el alias vacío de la Store: `python --version`) | `python3` | `python3` (si `pip install` global da `EXTERNALLY-MANAGED`, venv o paquetes del sistema) |
+| Python (`PY`) | `python` (que no sea el alias vacío de la Store: `python --version`) | **ruta absoluta** de un Python ≥ 3.10 con tkinter (python.org o Homebrew, p. ej. `/usr/local/bin/python3`); **nunca `/usr/bin/python3`** (el 3.9 de Apple) ni `python` (no existe). Absoluta porque los hooks no siempre heredan el PATH de la terminal | `python3` (si `pip install` global da `EXTERNALLY-MANAGED`, venv o paquetes del sistema) |
 | tkinter (ventanas de `costlog>`, `send>`…) | viene con Python | Homebrew: `brew install python-tk` | Arch `sudo pacman -S tk` · Debian/Ubuntu `sudo apt install python3-tk` · Fedora `sudo dnf install python3-tkinter` |
 | ¿Portátil? | `powercfg /a` (en PowerShell; desde Git Bash, `powercfg //a`) | `pmset -g batt` | `ls /sys/class/power_supply` |
 | Abrirle un fichero | `Start-Process notepad "<ruta>"` | `open -e "<ruta>"` | `xdg-open "<ruta>"` |
 | `PAPELERA` | `powershell -NoProfile -Command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('<fichero>','OnlyErrorDialogs','SendToRecycleBin')"` | `osascript -e 'tell app "Finder" to delete POSIX file "<fichero>"'` | `gio trash "<fichero>"` |
 | md2pdf: paquetes | `python -m pip install markdown-it-py pymupdf` | `python3 -m pip install markdown-it-py pymupdf` | lo mismo, o Arch `sudo pacman -S python-markdown-it-py python-pymupdf`, o venv |
 | md2pdf: navegador | Chrome o Edge (Edge viene con Windows) | Chrome (o Edge) | Chrome o Chromium; **Brave se cuelga sin escribir el PDF** (Arch/Wayland) |
-| keep-awake | `hooks/keep-awake.ps1.txt` (fase 4) | sin versión: idea con `caffeinate` → chat aparte | sin versión: idea con `systemd-inhibit` → chat aparte |
-| Whisper (`WHISPER_PY`) | `<HOME>/.whisper/Scripts/python.exe` | `<HOME>/.whisper/bin/python` | `<HOME>/.whisper/bin/python` |
+| keep-awake | `hooks/keep-awake.ps1.txt` (fase 4) | normalmente **no hace falta**: Claude Code ya lanza su propio `caffeinate` mientras trabaja (`hooks/keep-awake.md`) | sin versión: idea con `systemd-inhibit` → chat aparte |
+| Whisper (`WHISPER_PY`) | `<HOME>/.whisper/Scripts/python.exe` | `<HOME>/.whisper/bin/python` (si `pip install faster-whisper` no encuentra ruedas para un Python muy nuevo, crea el venv con un 3.12) | `<HOME>/.whisper/bin/python` |
+| Avisos | — | La 1.ª vez que un script lee Documentos/Escritorio/Descargas, macOS pide permiso para «Python» (Ajustes → Privacidad y seguridad): acéptalo | — |
 | settings | fragmento + claves `_solo_windows_…` | fragmento sin las `_solo_windows_…` | igual que Mac |
 
 ## Fase 0 — Reconocimiento y preguntas (no cambies nada global)
-1. **Sistema:** SO y versión (Linux: distribución, gestor de paquetes, X11/Wayland), shell(s) (`pwsh`, `powershell`, bash, zsh), Python (`python --version` / `python3 --version`; ¿pip global bloqueado?), si `tkinter` importa, `claude --version`, qué tienen `~/.claude/settings.json` (statusLine, hooks, permisos), `~/.claude/CLAUDE.md`, `~/.claude/skills/`, MCPs (`claude mcp list`), navegadores (Chrome/Chromium/Edge/Brave) y la extensión Claude in Chrome, git (`git --version`), y si es portátil (tabla de arriba).
+1. **Sistema:** SO y versión (Linux: distribución, gestor de paquetes, X11/Wayland), shell(s) (`pwsh`, `powershell`, bash, zsh), Python (`python --version` / `python3 --version`; ¿pip global bloqueado?), si `tkinter` importa (`"<PY>" -c "import sys, tkinter; print(sys.version, tkinter.TkVersion)"`; Mac: con la ruta absoluta de la tabla), `claude --version`, qué tienen `~/.claude/settings.json` (statusLine, hooks, permisos), `~/.claude/CLAUDE.md`, `~/.claude/skills/`, MCPs (`claude mcp list`), navegadores (Chrome/Chromium/Edge/Brave) y la extensión Claude in Chrome, git (`git --version`), y si es portátil (tabla de arriba).
 2. **El lab.** Si la persona ya instaló (o empezó a instalar) un kit antiguo, sin `kit-datos.yaml`: sigue *Vienes de un kit antiguo* de `kit/ACTUALIZAR.md` en vez de esta fase. Si esta carpeta no es ya `<LAB>/kit` (p. ej. está en Descargas), propón una carpeta fija para el lab (p. ej. `~/claude-lab`) y mover (o clonar) el kit **dentro, con el nombre `kit`**, porque los hooks guardan rutas absolutas. Luego la persona abre Claude **en `<LAB>`** y te dice «sigue `kit/CLAUDE.md` desde la fase 0».
 3. **Preguntas** (una tanda, las que no hayas podido ver tú; el idioma ya lo preguntaste, regla 11): nombre; cuenta(s) de Google y para qué; si tiene los conectores de claude.ai (Gmail/Calendar/Drive) y con qué cuenta; si estudia → universidad, URL de su Moodle (**compruébala** abriéndola), carpeta del curso, asignaturas (nombre corto + oficial), idioma de los documentos; si ya usa otro agente (Grok Bot, Instinct…); día y hora del reinicio semanal de su plan (claude.ai → Uso). Colores y recordatorios del calendario pueden esperar a la fase 6.
 4. **`<LAB>/kit-datos.yaml`** desde `kit/plantillas/kit-datos.yaml` con lo detectado y lo contestado (`IDIOMA`; `SO`, `PY`, `HOME`, `LAB`, `DESCARGAS`, `WHISPER_PY`, `PAPELERA` de la tabla; `kit_version` = la línea de `kit/VERSION.txt` (si no existe, `git -C kit log -1 --format=%cd` o la fecha del fichero más nuevo, y apúntalo en el informe); `kit_commit` = `git -C kit rev-parse HEAD` si es un clon). Enséñaselo. Copia `kit/INFORME_MIGRACION.md` → `<LAB>/INFORME_MIGRACION.md` y rellena *Sistema*.
@@ -87,7 +88,8 @@ Solo lo que cambia. `SO` y `PY` se apuntan en `kit-datos.yaml` en la fase 0 y de
 
 ## Fase 4 — keep-awake
 - **Windows y portátil:** `hooks/keep-awake.ps1.txt` → `~/.claude/hooks/keep-awake.ps1` (funciona con `powershell` 5.1 y `pwsh` 7). Hooks `start` (UserPromptSubmit) y `stop` (Stop, StopFailure, SessionEnd) de `_solo_windows_hooks_keep_awake`. Prueba: con Claude trabajando en algo largo, `powercfg /requests` muestra PowerShell en SYSTEM y DISPLAY. Ajusta tiempos (`$IdleDC`/`$IdleAC`) si quiere. Sobremesa: sigue evitando la suspensión; el brillo puede no cambiar (monitores externos).
-- **Mac / Linux:** no hay versión. Lee `hooks/keep-awake.md` (qué hace y la idea para su sistema) y pregúntale si lo quiere. Si sí, no lo escribas aquí: herramienta nueva → *Chats aparte* (regla 10).
+- **Mac:** normalmente ⏭. Con Claude trabajando, `ps -eo ppid,args | grep caffeinate`: si sale uno con padre `claude`, Claude Code ya lo hace; si no, como Linux.
+- **Linux:** no hay versión. Lee `hooks/keep-awake.md` (qué hace y la idea para su sistema) y pregúntale si lo quiere. Si sí, no lo escribas aquí: herramienta nueva → *Chats aparte* (regla 10).
 
 ## Fase 5 — Transcripción
 Copia `kit/transcribe/` → `<LAB>/transcribe/`. Instala el venv y el modelo como dice `transcribe/README.md` para su sistema (avisa: ~2 GB y unos minutos). Prueba con un audio corto suyo (p. ej. una nota de voz de WhatsApp). Si lo quiere, la sección `kit:audio` de la plantilla global (usa `WHISPER_PY`).
