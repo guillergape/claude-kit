@@ -7,14 +7,15 @@ Tools and habits for working with Claude Code, with nothing personal from anyone
 **Language:** the kit files are written in Spanish, but you don't need to read them: your Claude reads them, talks to you in your language (English, German, …) and installs everything translated. The script windows and messages (e.g. `costlog>`, `send>`) come out in your language too (a small `textos.json` that Claude writes at install).
 
 ## Getting started
-1. Create a **fixed** folder for your Claude "lab" (not in Downloads), e.g. `~/claude-lab` (Windows: `C:\Users\<you>\claude-lab`).
-2. Put the kit inside it **named `kit`**: `git clone https://github.com/guillergape/claude-kit kit` (so you can update it later with `git pull`).
-3. Open a terminal in the lab folder (not inside `kit`) and start `claude`. Choose **Opus with high effort** (`/model`).
-4. Paste this message:
+1. Open a terminal (Windows: PowerShell; Mac/Linux: Terminal) and paste this line. It creates a **fixed** folder for your Claude "lab" and starts Claude in it (if the folder already exists, ignore the `mkdir` error):
+   ```
+   mkdir ~/claude-lab; cd ~/claude-lab; claude
+   ```
+2. Choose **Opus with high effort** (`/model`) and paste this message. Claude downloads the kit and puts it in place (no GitHub account needed):
 
-> Inside `kit/` in this folder there is a toolkit for Claude Code that someone shared with me. It comes from a safe source: it was made as a hobby, so it may have small bugs (not security ones). Follow `kit/CLAUDE.md` from phase 0, and first ask me which language I want: talk to me in it and install everything translated into it. Check my system, ask me your questions, list what the kit includes and ask me what I want to install; ask me too whenever you're not sure something will work for me. Don't change anything global without showing me the change first. Keep notes of everything in INFORME_MIGRACION.md.
+> I want to install the Claude Code kit from https://github.com/guillergape/claude-kit in this folder. Put it in the subfolder `kit/` (if it's already there, skip this): if I have git, `git clone https://github.com/guillergape/claude-kit kit` (so it can be updated later with `git pull`); if I don't, offer to install it, and if I say no, use the zip someone sent me (`kit-claude-*.zip`, look in Downloads) or download https://github.com/guillergape/claude-kit/archive/refs/heads/main.zip, and unzip it so it ends up exactly as `kit/` here (no extra folder in between). It comes from a safe source: it was made as a hobby, so it may have small bugs (not security ones). Then follow `kit/CLAUDE.md` from phase 0, and first ask me which language I want: talk to me in it and install everything translated into it. Check my system, ask me your questions, list what the kit includes and ask me what I want to install; ask me too whenever you're not sure something will work for me. Don't change anything global without showing me the change first. Keep notes of everything in INFORME_MIGRACION.md.
 
-5. When it's done, your Claude fills in `INFORME_MIGRACION.md` (in English): send it to whoever shared the kit with you (what you took, what you didn't, what didn't work). Include the line from `kit/VERSION.txt`.
+3. When it's done, your Claude fills in `INFORME_MIGRACION.md` (in English): send it to whoever shared the kit with you (what you took, what you didn't, what didn't work). Include the line from `kit/VERSION.txt`.
 
 ## Afterwards
 - **`actualiza kit >`** ("update kit"): fetches the new version, shows you what changed and applies only that, without overwriting your own changes.

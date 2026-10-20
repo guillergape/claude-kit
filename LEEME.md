@@ -9,14 +9,15 @@ Herramientas y costumbres para trabajar con Claude Code, sin nada personal de na
 Repositorio (para `actualiza kit >`): https://github.com/guillergape/claude-kit
 
 ## Cómo empezar
-1. Crea una carpeta **fija** para tu "laboratorio" de Claude (no en Descargas), p. ej. `~/claude-lab` (Windows: `C:\Users\<tú>\claude-lab`).
-2. Mete el kit dentro **con el nombre `kit`**: `git clone https://github.com/guillergape/claude-kit kit` (así luego se actualiza con un `git pull`), o descomprime el zip y renombra la carpeta a `kit`.
-3. Abre un terminal en la carpeta del lab (no dentro de `kit`) y arranca `claude`. Pon **Opus con esfuerzo high** (`/model`).
-4. Pégale este mensaje:
+1. Abre un terminal (Windows: PowerShell; Mac/Linux: Terminal) y pega esta línea. Crea una carpeta **fija** para tu "laboratorio" de Claude y arranca Claude dentro (si la carpeta ya existe, el error de `mkdir` no importa):
+   ```
+   mkdir ~/claude-lab; cd ~/claude-lab; claude
+   ```
+2. Pon **Opus con esfuerzo high** (`/model`) y pégale este mensaje. Él se baja el kit y lo deja en su sitio (no hace falta cuenta de GitHub):
 
-> En esta carpeta, dentro de `kit/`, tengo un kit de herramientas para Claude Code que me han pasado. Es de un entorno seguro: lo han hecho por hobby, así que puede tener algún bug pequeño (no de seguridad). Sigue `kit/CLAUDE.md` desde la fase 0: mira mi sistema, hazme las preguntas, lístame lo que trae y pregúntame qué quiero instalar, y pregúntame también cuando no estés seguro de que algo me vaya a funcionar. No cambies nada global sin enseñarme antes el cambio. Ve apuntando todo en INFORME_MIGRACION.md.
+> Quiero instalar el kit de Claude Code de https://github.com/guillergape/claude-kit en esta carpeta. Ponlo en la subcarpeta `kit/` (si ya está ahí, sáltate esto): si tengo git, `git clone https://github.com/guillergape/claude-kit kit` (así luego se actualiza con `git pull`); si no lo tengo, ofréceme instalarlo, y si no quiero, usa el zip que me hayan pasado (`kit-claude-*.zip`, mira en Descargas) o baja https://github.com/guillergape/claude-kit/archive/refs/heads/main.zip, y descomprímelo para que quede exactamente `kit/` aquí (sin carpetas de más en medio). Es de un entorno seguro: lo han hecho por hobby, así que puede tener algún bug pequeño (no de seguridad). Luego sigue `kit/CLAUDE.md` desde la fase 0: mira mi sistema, hazme las preguntas, lístame lo que trae y pregúntame qué quiero instalar, y pregúntame también cuando no estés seguro de que algo me vaya a funcionar. No cambies nada global sin enseñarme antes el cambio. Ve apuntando todo en INFORME_MIGRACION.md.
 
-5. Al terminar, tu Claude rellena `INFORME_MIGRACION.md`: mándaselo a quien te pasó el kit respondiendo a su correo (qué te llevaste, qué no y qué no funcionó). Copia en él la línea de `kit/VERSION.txt`.
+3. Al terminar, tu Claude rellena `INFORME_MIGRACION.md`: mándaselo a quien te pasó el kit respondiendo a su correo (qué te llevaste, qué no y qué no funcionó). Copia en él la línea de `kit/VERSION.txt`.
 
 ## Después
 - **`actualiza kit >`**: trae la versión nueva, te enseña qué cambió (`CAMBIOS.md`) y aplica solo eso, sin pisar lo que hayas cambiado tú.
