@@ -4,6 +4,21 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-22 — arreglos de una instalación en Windows (UC3M)
+- **moodle** (`modulos/moodle/moodle.py`, `SKILL.md`):
+  - comando nuevo **`token`**: guarda el token a partir del `moodlemobile://token=…` que copias de las DevTools (lo lee del portapapeles y lo vacía), sin que Claude lo vea nunca. El SKILL.md ofrece esta vía primero; la de Claude in Chrome sigue, avisando de que el token pasa por el chat.
+  - el token solo se añade a descargas de tu propio Moodle (`site`); un enlace a otro sitio se salta y se avisa.
+  - los títulos de avisos, materiales y fechas ya no salen con `&amp;` y similares.
+  - si Python no se fía del certificado del Moodle (`CERTIFICATE_VERIFY_FAILED`, visto en Windows con Aula Global), el mensaje dice cómo arreglarlo (Windows: una petición con `Invoke-WebRequest`; Mac: `Install Certificates.command`).
+  - un `HTTP 403` ya no sale como error de Python: el mensaje dice que es tu Moodle bloqueando la red (p. ej. solo desde el campus o la VPN), no el token.
+- **status line** (`costlog/statusline.py`): «sem» sale en tu idioma (`wk` en inglés), vía `textos.json`. Al actualizar, copia también `textos.en.json` (o añade `"sem"` a tu `textos.json`).
+- **`costlog/textos.py --test`**: ya no falla si borraste `send.py`; los textos de scripts no instalados solo se cuentan.
+- **`rellenar.py`**: entiende las comillas escapadas como en YAML (`"…\"…"`, `'…''…'`) y una clave vacía con comentario (`asignaturas:   # …`) ya no toma el comentario como valor.
+- **Guía** (`CLAUDE.md`): en Windows, Python ≥ 3.10 comprobado (el de la Store puede ser 3.9) y por ruta absoluta; md2pdf avisa de que `pymupdf` 2.x es una instalación grande; `powercfg /requests` pide terminal de administrador (también en `hooks/keep-awake.md`); fase 8 propone completar `autoMode.environment` con tus carpetas de confianza y ficheros secretos; fase 9 quita del CLAUDE.md del lab los comandos no instalados.
+- **asignaturas** (`CLAUDE.curso.md`): la sección *Calendario* tiene una línea para quien no instaló la fase 6, y ya no menciona `Moodle links.md` (no lo creaba nada).
+- **uc3m** (`README.md`): el login de Aula Global es SSO por `login.uc3m.es` (CAS), y nota del certificado en Windows. Desde el 2026-10-22, fuera de la uni Aula Global solo funciona con la VPN de la UC3M (GlobalProtect).
+- **md2pdf** (`SKILL.md`): nada de `·` u otros símbolos Unicode dentro de `\text{}` (KaTeX da `\cdotp`).
+
 ## 2026-10-17 — Mac (probado en un Mac real)
 - **md2pdf** (`skills/md2pdf/md2pdf.py`): en Mac, Chrome escribe el PDF y no se cierra; md2pdf se colgaba 3 min y fallaba. Ahora vigila hasta que el PDF (o el volcado de la página) está listo y cierra Chrome: unos segundos. Windows igual que antes. Edge de Mac añadido a la lista de navegadores.
 - **Python en Mac** (tabla *Por sistema operativo* de `CLAUDE.md`): ruta absoluta de un Python ≥ 3.10 con tkinter, nunca `/usr/bin/python3` (3.9 de Apple). Si tus hooks usan `python3` y te funcionan, no hace falta cambiar nada.

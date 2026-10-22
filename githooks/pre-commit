@@ -1,6 +1,8 @@
 #!/bin/sh
 # Barrera de datos personales (ver tools/check_privado.py). Activar: git config core.hooksPath githooks
 root=$(git rev-parse --show-toplevel)
+# Cada commit lleva su VERSION.txt (python empaquetar.py + entrada en CAMBIOS.md): si no, quien clona informa una versión vieja
+git diff --cached --name-only | grep -qx VERSION.txt || { echo "pre-commit: falta VERSION.txt (python empaquetar.py; git add -A)" >&2; exit 1; }
 for py in python3 python; do
   "$py" -c "" >/dev/null 2>&1 && exec "$py" "$root/tools/check_privado.py" --staged
 done

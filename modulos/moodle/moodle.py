@@ -8,8 +8,9 @@ Config: moodle.json next to this file (or $MOODLE_CONFIG), see moodle.example.js
   moodle.py get   SUBJ CMID...      download those modules' files to the inbox
   moodle.py post  DID               print one notice (discussion) as text
   moodle.py seen  KEY...            mark SUBJ:cm<id> / SUBJ:d<id> / SUBJ:ev<id> as seen
+  moodle.py token                   save the token from a copied moodlemobile://token=… (clipboard), never printed
 """
-import html, json, os, pathlib, re, sys, time, urllib.parse, urllib.request
+import base64, html, json, os, pathlib, re, sys, time, urllib.error, urllib.parse, urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8")
 CONFIG = pathlib.Path(os.environ.get("MOODLE_CONFIG") or pathlib.Path(__file__).with_name("moodle.json"))
@@ -33,7 +34,19 @@ def ws(fn, **kw):
         sys.exit(f"No token in {TOKEN_FILE}: get one (see SKILL.md, 'Token').")
     data = urllib.parse.urlencode({"wstoken": TOKEN_FILE.read_text().strip(), "wsfunction": fn,
                                    "moodlewsrestformat": "json", **kw}).encode()
-    r = json.load(urllib.request.urlopen(SITE + "/webservice/rest/server.php", data, timeout=60))
+    try:
+        r = json.load(urllib.request.urlopen(SITE + "/webservice/rest/server.php", data, timeout=60))
+    except urllib.error.HTTPError as e:
+        if e.code != 403:
+            raise
+        sys.exit(f"HTTP 403: {SITE} is blocking this network, not the token (some Moodles only allow the campus "
+                 f"network or VPN). Open {SITE} in a browser to read its notice, then retry from there.")
+    except urllib.error.URLError as e:
+        if "CERTIFICATE_VERIFY_FAILED" not in str(e.reason):
+            raise
+        sys.exit(f"SSL: this Python doesn't trust {SITE}'s root certificate yet ({e.reason}). Windows: run once in "
+                 f"PowerShell `Invoke-WebRequest -UseBasicParsing -Method Head {SITE}` (Windows fetches the missing root), "
+                 "then retry. Mac (python.org Python): run `Install Certificates.command` in its Applications folder.")
     if isinstance(r, dict) and "exception" in r:
         if r.get("errorcode") in ("invalidtoken", "accessexception"):
             sys.exit("TOKEN EXPIRED/INVALID: renew it (see SKILL.md, 'Token').")
@@ -80,7 +93,7 @@ def had(c, disk):
 def modules(cid):
     for sec in ws("core_course_get_contents", courseid=cid):
         for m in sec["modules"]:
-            yield sec["name"], m
+            yield html.unescape(sec["name"]), m
 
 
 def cmd_courses(args):
@@ -119,11 +132,11 @@ def cmd_new(args):
         print(f"## {subj} (course {cid})")
         for sec, m, fs, tag in files:
             names = ", ".join(c["filename"] for c in fs[:4]) + (f" +{len(fs) - 4}" if len(fs) > 4 else "")
-            print(f"  [{tag}] cm{m['id']} | {sec} | {m['name']} | {names} | {when(max(c['timemodified'] for c in fs)) if fs else '-'}")
+            print(f"  [{tag}] cm{m['id']} | {sec} | {html.unescape(m['name'])} | {names} | {when(max(c['timemodified'] for c in fs)) if fs else '-'}")
         for sec, m in others:
-            print(f"  [new {m['modname']}] cm{m['id']} | {sec} | {m['name']}")
+            print(f"  [new {m['modname']}] cm{m['id']} | {sec} | {html.unescape(m['name'])}")
         for d in notices:
-            print(f"  [notice] d{d['discussion']} | {when(d['timemodified'])} | {d['userfullname']} | {d['name']}")
+            print(f"  [notice] d{d['discussion']} | {when(d['timemodified'])} | {d['userfullname']} | {html.unescape(d['name'])}")
         if not (files or others or notices):
             print("  nothing new")
     save(state)
@@ -135,7 +148,7 @@ def cmd_due(args):
     for e in ws("core_calendar_get_action_events_by_timesort", timesortfrom=int(time.time()), limitnum=50)["events"]:
         cid = e["course"]["id"]
         if cid in wanted or (show_all and cid not in BY_ID):
-            print(f"{when(e['timesort'])} | {BY_ID.get(cid, e['course']['fullname'][:30])} | {e['name']} | {e.get('modulename')}")
+            print(f"{when(e['timesort'])} | {BY_ID.get(cid, e['course']['fullname'][:30])} | {html.unescape(e['name'])} | {e.get('modulename')}")
 
 
 def cmd_dates(args):
@@ -149,7 +162,7 @@ def cmd_dates(args):
         key = f"{subj}:ev{e['id']}"
         if show_all or key not in state:
             end = f" -> {when(e['timestart'] + e['timeduration'])}" if e["timeduration"] else ""
-            print(f"ev{e['id']} | {subj} | {when(e['timestart'])}{end} | {e['eventtype']}/{e.get('modulename') or '-'} | {e['name']}")
+            print(f"ev{e['id']} | {subj} | {when(e['timestart'])}{end} | {e['eventtype']}/{e.get('modulename') or '-'} | {html.unescape(e['name'])}")
 
 
 def cmd_get(args):
@@ -164,6 +177,9 @@ def cmd_get(args):
             dest = out / c["filename"]
             if dest.exists():
                 print(f"skip (already in inbox): {dest.name}")
+                continue
+            if not c["fileurl"].startswith(SITE + "/"):  # the token only ever goes to our own Moodle
+                print(f"skip (not on {SITE}): {c['filename']} -> {c['fileurl']}")
                 continue
             url = c["fileurl"] + ("&" if "?" in c["fileurl"] else "?") + "token=" + TOKEN_FILE.read_text().strip()
             dest.write_bytes(urllib.request.urlopen(url, timeout=120).read())
@@ -191,7 +207,28 @@ def cmd_seen(args):
     print("marked:", ", ".join(args))
 
 
+def cmd_token(args):
+    # the person copies moodlemobile://token=<base64> (SKILL.md, 'Token'); only "saved" is printed, so Claude never sees it
+    try:
+        import tkinter
+        tk = tkinter.Tk()
+        tk.withdraw()
+        clip = tk.clipboard_get()
+    except Exception as e:
+        sys.exit(f"Couldn't read the clipboard ({type(e).__name__}).")
+    m = re.search(r"token=([A-Za-z0-9+/=]+)", clip)
+    try:
+        token = base64.b64decode(m.group(1) + "=" * (-len(m.group(1)) % 4)).decode().split(":::")[1]
+    except (AttributeError, ValueError, IndexError):
+        sys.exit("The clipboard has no moodlemobile://token=… : copy it first (SKILL.md, 'Token').")
+    tk.clipboard_clear()  # don't leave it in the clipboard
+    tk.update()
+    tk.destroy()
+    TOKEN_FILE.write_text(token)
+    print(f"token saved to {TOKEN_FILE} (not shown); clipboard cleared")
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or sys.argv[1] not in ("courses", "new", "due", "dates", "get", "post", "seen"):
+    if len(sys.argv) < 2 or sys.argv[1] not in ("courses", "new", "due", "dates", "get", "post", "seen", "token"):
         sys.exit(__doc__)
     globals()["cmd_" + sys.argv[1]](sys.argv[2:])

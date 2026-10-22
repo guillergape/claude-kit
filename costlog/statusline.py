@@ -1,6 +1,7 @@
 """Status line: shows model · $ · 5 h % · weekly % · context %, and saves per-session usage snapshots
 (start + last) in ~/.claude/costlog-state/ so `costlog>` (costlog.py) can log usage start→end with no tokens."""
 import json, os, sys, time
+from textos import T  # texts in the person's language (textos.json next to this file); Spanish without it
 
 STATE = os.path.expanduser("~/.claude/costlog-state")
 LAST_LIMITS = os.path.join(STATE, "_last_limits.json")
@@ -68,5 +69,5 @@ ctx = (d.get("context_window") or {}).get("used_percentage")
 c = snap["cost"]
 print(f"{model} · ${c:.2f}" if isinstance(c, (int, float)) else model,
       f"· 5h {pct((snap['5h'] or {}).get('used_percentage'))}",
-      f"· sem {pct((snap['7d'] or {}).get('used_percentage'))}",
+      f"· {T('sem')} {pct((snap['7d'] or {}).get('used_percentage'))}",
       f"· ctx {pct(ctx)}")

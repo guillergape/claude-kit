@@ -24,8 +24,11 @@ def leer_datos(path):
         if not m:
             continue
         v = m.group(2)
-        q = re.match(r"""(["'])(.*?)\1""", v)
-        v = q.group(2) if q else v.split(" #")[0].rstrip()  # entre comillas, o sin el comentario del final
+        q = re.match(r""""((?:[^"\\]|\\.)*)"|'((?:[^']|'')*)'""", v)  # como en YAML: "…\"…" y '…''…'
+        if q:
+            v = re.sub(r'\\(["\\])', r"\1", q.group(1)) if q.group(1) is not None else q.group(2).replace("''", "'")
+        else:
+            v = re.split(r"(?:^|\s)#", v)[0].rstrip()  # sin el comentario del final (o solo comentario: vacío)
         if v and v not in ("[]", "{}", "|", ">"):
             datos[m.group(1)] = v
     return datos
@@ -65,9 +68,11 @@ def test():
     with tempfile.TemporaryDirectory() as tmp:
         d = os.path.join(tmp, "kit-datos.yaml")
         Path(d).write_text('# comentario\nNombre: Ana\nLAB: "/home/ana/claude lab"\nPY: python3   # Mac/Linux\n'
-                           'CORREO: ""\nX: "" # comentario\nY: \'a # b\'  # c\nasignaturas:\n  - corto: Prog\nmodulos: []\n', encoding="utf-8")
+                           'CORREO: ""\nX: "" # comentario\nY: \'a # b\'  # c\nasignaturas:   # comentario\n  - corto: Prog\nmodulos: []\n'
+                           'P1: "x \\"<f>\\" (\'y\')"  # c\nP2: \'it\'\'s "z"\'\n', encoding="utf-8")
         datos = leer_datos(d)
-        assert datos == {"Nombre": "Ana", "LAB": "/home/ana/claude lab", "PY": "python3", "Y": "a # b"}, datos
+        assert datos == {"Nombre": "Ana", "LAB": "/home/ana/claude lab", "PY": "python3", "Y": "a # b",
+                         "P1": 'x "<f>" (\'y\')', "P2": 'it\'s "z"'}, datos
         t, quedan = rellenar('<!-- kit:x -->\n<div>Hola <Nombre></div>\n`<PY> "<LAB>/a.py"` <CORREO> <cuenta por defecto><br>', datos)
         assert '<div>Hola Ana</div>' in t and '`python3 "/home/ana/claude lab/a.py"`' in t, t
         assert quedan == ["<CORREO>", "<cuenta por defecto>"], quedan

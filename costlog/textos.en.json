@@ -98,5 +98,6 @@
   "Con «{kw}» ({n})": "With «{kw}» ({n})",
   "⚠ Ningún borrador contiene «{kw}»": "⚠ No draft contains «{kw}»",
   "Adjuntos (clic = abrir):": "Attachments (click = open):",
-  "{e}: {x}  (¿token caducado? reautoriza con google-workspace)": "{e}: {x}  (token expired? re-authorise with google-workspace)"
+  "{e}: {x}  (¿token caducado? reautoriza con google-workspace)": "{e}: {x}  (token expired? re-authorise with google-workspace)",
+  "sem": "wk"
 }

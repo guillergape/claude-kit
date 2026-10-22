@@ -21,7 +21,7 @@ Soy <Nombre>, de <curso> de <grado> en <UNI>. Objetivo: **estudiar leyendo y ent
 - Si no sabes si algo entra, dilo en vez de adivinar.
 
 ## Estructura de cada asignatura
-- `00_Syllabus & Schedule/`: guía docente, `Moodle links.md` y:
+- `00_Syllabus & Schedule/`: guía docente (o su enlace en `Main sources.md`) y:
   - **`Main sources.md`**: qué sigue el curso, evaluación, fechas, material de examen y una línea **Status** (confirmado / pendiente). Actualízalo cuando confirme algo. Su última sección es `## Classes given`, el único sitio para lo que se dio clase a clase: `| Date | Wn | Yo | Covered → where the teacher stopped | Source |` (Yo: ✓ fui · ✗ no fui · ⊘ cancelada · ? no se sabe). Añade una fila cuando te diga qué se vio, o cuando llegue material nuevo de una clase.
   - **`calendar.md`**: eventos con su fiabilidad (**sure** oficial · **probable** buena fuente · **maybe** sin confirmar) y su fuente; los pasados, a una sección *Past events*.
 - Luego solo carpetas con contenido: `Theory/`, `Problems/`, `Labs/`, `Past Exams/` (o `Exam Bank/`), `Teacher Notes & Books/`, `Books/`… No crees carpetas vacías.
@@ -99,4 +99,6 @@ Reparto decidido en la migración (`<LAB>/kit/modulos/grok-bot/grok-bot.md`):
 - (Solo Windows) Consola en cp1252: Python con `PYTHONIOENCODING=utf-8` al imprimir texto con fórmulas.
 
 ## Calendario
-Reglas en el CLAUDE.md global. Un calendario por asignatura + General; igual que el `calendar.md` de cada asignatura.
+<!-- Deja solo la línea que toque: la primera si instaló la fase 6 (email y calendario), la segunda si no. -->
+- Reglas en el CLAUDE.md global. Un calendario por asignatura + General; igual que el `calendar.md` de cada asignatura.
+- Aún sin herramienta de calendario: las fechas van solo en el `calendar.md` de cada asignatura.

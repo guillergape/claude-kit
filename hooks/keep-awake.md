@@ -23,7 +23,7 @@ En portátiles con **Modern Standby** (S0 low power idle; míralo con `powercfg 
 - Errores amarillos "API Error … connection" no son siempre suspensión: pueden ser cortes de Wi-Fi. Para distinguirlo: `Get-WinEvent` del log System (Kernel-Power 506/507 = entra/sale de Modern Standby) y `Microsoft-Windows-WLAN-AutoConfig/Operational` (11004/11005 = reautenticación Wi-Fi) alrededor de la hora del error.
 
 ## Comprobar que funciona
-Con Claude trabajando: `powercfg /requests` debe mostrar el proceso de PowerShell en SYSTEM y DISPLAY. Ajustes al principio del script (`$IdleDC`, `$IdleAC`, `$StaleMinutes`, `$MaxHours`).
+Con Claude trabajando: `powercfg /requests` (en un terminal **de administrador**; sin él, Windows dice que hacen falta privilegios) debe mostrar el proceso de PowerShell en SYSTEM y DISPLAY. Ajustes al principio del script (`$IdleDC`, `$IdleAC`, `$StaleMinutes`, `$MaxHours`).
 
 ## Mac y Linux — sin versión todavía (idea sin probar)
 Si la persona lo quiere, se hace en un **chat aparte** (regla 10 de la guía) y se apunta en el informe para que el autor lo añada al kit.

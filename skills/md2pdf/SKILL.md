@@ -60,7 +60,7 @@ Before printing, the page script:
 
 ## Writing Markdown that converts well
 
-- Math: `$...$` inline, `$$...$$` display (can span lines). Standard KaTeX LaTeX: `\frac`, `\vec`, `\hat`, `\langle \rangle`, `\begin{aligned}`, `\begin{pmatrix}`, `\boxed{}`, `\text{}`… No custom `\newcommand`.
+- Math: `$...$` inline, `$$...$$` display (can span lines). Standard KaTeX LaTeX: `\frac`, `\vec`, `\hat`, `\langle \rangle`, `\begin{aligned}`, `\begin{pmatrix}`, `\boxed{}`, `\text{}`… No custom `\newcommand`. No Unicode maths symbols inside `\text{}` (a `·` there gives `Undefined control sequence: \cdotp`): write `\text{J}\cdot\text{s}`.
 - A literal dollar sign must be written `\$`.
 - The text column is about 17.5 cm wide: split long display formulas over lines (`gathered` / `aligned`) instead of chaining several results with `\qquad`.
 - Separate paragraphs with a blank line (inside a blockquote, a line with just `>`). A line that starts with `**Bold:**` right under another line joins that paragraph.

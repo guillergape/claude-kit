@@ -16,6 +16,7 @@ Script: `<PY> "<HOME>/.claude/skills/moodle/moodle.py" <cmd>` (stdlib only, ~2 s
 | `get <Asig> cm<id>…` | downloads those modules' files to the inbox (`<root>/_moodle/inbox/<Asig>/`) and marks them seen |
 | `post d<id>` | full text of one notice |
 | `seen <Asig>:cm<id>\|d<id>\|ev<id>…` | dismisses items (state in `<root>/_moodle/seen.json`) |
+| `token` | saves the token from a `moodlemobile://token=…` the user copied (clipboard), prints only "saved", clears the clipboard |
 
 "On disk" = same file name (ignoring the extension) or same byte size anywhere in the subject folder, so renamed and converted files still count. The first `new` of a subject lists every file not on disk yet: that is normal.
 
@@ -36,10 +37,9 @@ Only after my yes, following the calendar rules in `~/.claude/CLAUDE.md`: subjec
 
 ## Token
 In the file `token_file` points to (default `~/.moodle-token`). **Never print it.** If the script says `TOKEN EXPIRED/INVALID` or there is no token yet:
-- **If the university login is SSO** (a "log in with your university account" page; the usual case): with the Claude in Chrome extension, in the browser where the user is logged in to Moodle:
-  1. Call `read_network_requests` on the tab once to start tracking.
-  2. Navigate it to `<site>/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=12345&urlscheme=moodlemobile`.
-  3. `read_network_requests` with pattern `mobile` shows `moodlemobile://token=<base64>`. base64 decodes to `sitesig:::token[:::privatetoken]`. Write only the token (2nd part) to the file and say it was renewed.
-  Without the extension, the user can do the same: open that URL with the browser's DevTools → Network tab open and copy the `moodlemobile://token=…` it tries to open.
+- **If the university login is SSO** (a "log in with your university account" page; the usual case), the token comes from `<site>/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=12345&urlscheme=moodlemobile`, opened in the browser where the user is logged in to Moodle. Two ways (the installation asks which one the user prefers):
+  - **Claude never sees it (default):** the user opens the browser's DevTools → Network tab, opens that URL, copies the `moodlemobile://token=…` it tries to open, and says so. Then run `moodle.py token`: it reads the clipboard, keeps only the token and clears the clipboard.
+  - **Automatic, with the Claude in Chrome extension:** `read_network_requests` on the tab once (starts tracking), navigate it to that URL, then `read_network_requests` with pattern `mobile` shows `moodlemobile://token=<base64>` (decodes to `sitesig:::token[:::privatetoken]`). Write only the token (2nd part) to the file without printing it. The token does pass through Claude's context and the local chat transcript.
+  Say it was renewed and check it with `courses`.
 - **If the Moodle has its own username/password** (no SSO): `<site>/login/token.php?service=moodle_mobile_app` with username and password works, but **the user types them**, never Claude, and the password is never stored.
 - If neither works, the mobile web service may be off on that Moodle: then use the browser without screenshots (global rule *Websites and forms*).

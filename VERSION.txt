@@ -1,3 +1,3 @@
-Versión del kit: 2026-10-14_2038
+Versión del kit: 2026-10-23_0034
 (fecha del fichero más nuevo: CAMBIOS.md)
 Si mandas el informe o feedback, copia esta línea.
