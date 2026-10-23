@@ -29,6 +29,18 @@ FILE_MODS = {"resource", "folder"}
 NOTICE_DAYS = 30
 
 
+def vpn():
+    """On a 403: runs moodle.json's "vpn" command (e.g. vpn-globalprotect.ps1) once; True if it connected (exit 0)."""
+    cmd = CFG.get("vpn")
+    if not cmd or getattr(vpn, "tried", False):
+        return False
+    vpn.tried = True
+    import subprocess
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    print(r.stdout.strip(), flush=True)
+    return r.returncode == 0
+
+
 def ws(fn, **kw):
     if not TOKEN_FILE.exists():
         sys.exit(f"No token in {TOKEN_FILE}: get one (see SKILL.md, 'Token').")
@@ -39,8 +51,11 @@ def ws(fn, **kw):
     except urllib.error.HTTPError as e:
         if e.code != 403:
             raise
-        sys.exit(f"HTTP 403: {SITE} is blocking this network, not the token (some Moodles only allow the campus "
-                 f"network or VPN). Open {SITE} in a browser to read its notice, then retry from there.")
+        if not vpn():
+            sys.exit(f"HTTP 403: {SITE} is blocking this network, not the token (some Moodles only allow the campus "
+                     f"network or VPN). Open {SITE} in a browser to read its notice; with a VPN, connect it and retry "
+                     "(or set \"vpn\" in moodle.json, SKILL.md 'VPN').")
+        r = json.load(urllib.request.urlopen(SITE + "/webservice/rest/server.php", data, timeout=60))
     except urllib.error.URLError as e:
         if "CERTIFICATE_VERIFY_FAILED" not in str(e.reason):
             raise

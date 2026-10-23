@@ -4,6 +4,12 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-23 — Moodle detrás de una VPN: GlobalProtect se conecta solo
+- **moodle** (`modulos/moodle/moodle.py`, `SKILL.md` → *VPN*, `moodle.example.json`): clave nueva opcional `"vpn"` en `moodle.json`, un comando que `moodle.py` ejecuta una vez ante un `HTTP 403` antes de reintentar. Sin ella, nada cambia (solo el aviso del 403).
+- **Nuevo `modulos/moodle/vpn-globalprotect.ps1.txt`** (Windows): pulsa *Connect* en GlobalProtect sin tocar ratón ni teclado; con SSO el login se completa solo en el navegador si ya tiene la sesión, y luego cierra esa ventana. No escribe nunca nada. Para instalarlo: `modulos/uc3m/README.md` → *Fuera de la uni, VPN*.
+- **uc3m** (`README.md`): Aula Global solo funciona desde la red de la UC3M o con su VPN (desde el 2026-10-22); cómo dejar la VPN automática.
+
+
 ## 2026-10-22 — arreglos de una instalación en Windows (UC3M)
 - **moodle** (`modulos/moodle/moodle.py`, `SKILL.md`):
   - comando nuevo **`token`**: guarda el token a partir del `moodlemobile://token=…` que copias de las DevTools (lo lee del portapapeles y lo vacía), sin que Claude lo vea nunca. El SKILL.md ofrece esta vía primero; la de Claude in Chrome sigue, avisando de que el token pasa por el chat.

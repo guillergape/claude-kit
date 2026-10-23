@@ -35,6 +35,9 @@ Script: `<PY> "<HOME>/.claude/skills/moodle/moodle.py" <cmd>` (stdlib only, ~2 s
 ## Calendar ("mete las fechas…", or yes to the offer)
 Only after my yes, following the calendar rules in `~/.claude/CLAUDE.md`: subject calendar, no notifications to anyone, deadlines **at their time** (e.g. 23:30–23:59 for a 23:59 deadline), not all-day; exams/labs with their reminders; doubtful dates marked `¿…?` with the source in the description. Search the calendar for the same event first to avoid duplicates. After adding (or if I say no), `seen <Asig>:ev<id>`.
 
+## VPN
+Some Moodles only answer from the university network: from outside, everything (even the login page) is `HTTP 403`, and `moodle.py` says so. If `moodle.json` has `"vpn"` (a command), `moodle.py` runs it once on a 403 and, if it exits 0, carries on (lines starting `VPN:`). On Windows with **GlobalProtect**, that command is `vpn-globalprotect.ps1` (`powershell -NoProfile -ExecutionPolicy Bypass -File "<HOME>/.claude/skills/moodle/vpn-globalprotect.ps1" -Site <site>`): it clicks GlobalProtect's own Connect without touching mouse or keyboard, and with SSO the sign-in completes by itself in a browser already signed in. Give `moodle.py` a timeout of ≥ 3 min. If it still ends with `HTTP 403 …`, tell me in one line to connect the VPN myself; never click or type in the sign-in page.
+
 ## Token
 In the file `token_file` points to (default `~/.moodle-token`). **Never print it.** If the script says `TOKEN EXPIRED/INVALID` or there is no token yet:
 - **If the university login is SSO** (a "log in with your university account" page; the usual case), the token comes from `<site>/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=12345&urlscheme=moodlemobile`, opened in the browser where the user is logged in to Moodle. Two ways (the installation asks which one the user prefers):

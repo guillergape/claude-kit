@@ -2,6 +2,7 @@
   "site": "https://moodle.EJEMPLO.es",
   "root": "~/Documents/Uni/1o",
   "token_file": "~/.moodle-token",
+  "vpn": "",
   "courses": {
     "Prog": 12345,
     "Calculo": 23456

@@ -1,0 +1,72 @@
+<#
+Connects a GlobalProtect VPN (Palo Alto, Windows) when the Moodle only answers from the university network, without
+screenshots or tokens. Installed as ~/.claude/skills/moodle/vpn-globalprotect.ps1 and run by moodle.py on an HTTP 403
+through "vpn" in moodle.json (SKILL.md, 'VPN'):
+  powershell -NoProfile -ExecutionPolicy Bypass -File vpn-globalprotect.ps1 -Site https://<moodle> [-Wait 90]
+It only clicks GlobalProtect's own "Connect" button (UI Automation + PostMessage: the mouse and keyboard aren't touched;
+its panel shows bottom right). With SSO, the university sign-in then opens in the default browser and, if that browser
+is already signed in, completes by itself. This script never types anything and never touches the sign-in page; if the
+sign-in wants something, the person does it while the script waits. Then it closes that leftover browser window (one
+"GlobalProtect" tab). The portal must have been set up once by hand in GlobalProtect.
+Exit: 0 = the site answers (not 403) · 2 = not connected in time · 3 = GlobalProtect not installed.
+#>
+param([Parameter(Mandatory)][string]$Site, [int]$Wait = 90)
+$GP = "$env:ProgramFiles\Palo Alto Networks\GlobalProtect\PanGPA.exe"
+
+function Reachable { $c = & curl.exe -s -o NUL -w "%{http_code}" --max-time 10 "$Site/login/index.php"; return ($c -ne "403" -and $c -ne "000") }
+
+if (Reachable) { "VPN: $Site already reachable"; exit 0 }
+if (-not (Test-Path $GP)) { "VPN: GlobalProtect not installed"; exit 3 }
+
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public static class GpW { [DllImport("user32.dll")] public static extern IntPtr PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l); }
+"@
+$A = [System.Windows.Automation.AutomationElement]; $T = [System.Windows.Automation.TreeScope]
+
+function Button {
+    # only GlobalProtect's own panel (process PanGPA, dialog #32770), then its Connect/Disconnect button (id 1160)
+    $ids = (Get-Process PanGPA -ErrorAction SilentlyContinue).Id
+    foreach ($w in $A::RootElement.FindAll($T::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+        if ($ids -contains $w.Current.ProcessId -and $w.Current.ClassName -eq "#32770") {
+            $b = $w.FindFirst($T::Descendants, (New-Object System.Windows.Automation.PropertyCondition($A::AutomationIdProperty, "1160")))
+            if ($b) { return $b }
+        }
+    }
+}
+
+function Connect {
+    Start-Process $GP; Start-Sleep 2  # shows the panel (starts the agent if it wasn't running)
+    $b = Button
+    if (-not $b -or $b.Current.Name -ne "Connect") { "VPN: button is '$($b.Current.Name)', not clicking"; return }
+    $h = [IntPtr]$b.Current.NativeWindowHandle
+    [GpW]::PostMessage($h, 0x201, [IntPtr]1, [IntPtr]0x000A000A) | Out-Null  # WM_LBUTTONDOWN
+    [GpW]::PostMessage($h, 0x202, [IntPtr]0, [IntPtr]0x000A000A) | Out-Null  # WM_LBUTTONUP
+    "VPN: clicked Connect"
+}
+
+function CloseSignInWindow {
+    # the browser window GlobalProtect opened for the sign-in, only if its single tab is GlobalProtect's
+    $tab = New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem)
+    foreach ($w in $A::RootElement.FindAll($T::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
+        if ($w.Current.Name -like "GlobalProtect - *") {
+            $tabs = $w.FindAll($T::Descendants, $tab)
+            if ($tabs.Count -eq 1 -and $tabs[0].Current.Name -like "GlobalProtect*") {
+                $w.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern).Close()
+            }
+        }
+    }
+}
+
+Connect
+$end = (Get-Date).AddSeconds($Wait); $retried = $false
+while ((Get-Date) -lt $end) {
+    Start-Sleep 3
+    if (Reachable) { Start-Sleep 2; CloseSignInWindow; "VPN: connected, $Site reachable"; exit 0 }
+    if (-not $retried -and (Get-Date) -gt $end.AddSeconds(-$Wait / 2) -and (Button).Current.Name -eq "Connect") {
+        $retried = $true; Connect  # the first attempt fell back to "Connect": one more try
+    }
+}
+"VPN: not connected after $Wait s (the sign-in page may need the person: click Connect in GlobalProtect)"
+exit 2
