@@ -16,6 +16,7 @@ Esta carpeta no es solo para aprender Claude: es un **sandbox para experimentar 
 - `costlog> <nota sesión 1–5> <nota resultado 1–5|-|NA> [nota]` al final de cualquier sesión → una fila en `costlog.csv` (lo hace el hook `costlog/costlog.py`; Claude no ve el mensaje). Columnas en `costlog.md`. Solo comparar entradas cuando lo pida. Si pido apuntar una sesión a mano (sin `costlog>`), añade una fila con el módulo `csv` de Python (`session_id` = `manual`); si el CSV está abierto en Excel, dímelo y espera.
 - `blocklog> <solución>` → una fila en `blocklog.csv` por incidente de bloqueo (sacado del transcript). Funciona aunque el clasificador esté caído.
 - `send> <palabras>` → ventana de borradores de Gmail para enviar yo (`costlog/send.py`).
+- `wait> <prompt>` / `go>` / `trigger> <evento>` → prompts en espera (`costlog/wait.py`; `wait>` lista los comandos).
 - `_<carpeta>:` → modo carpeta (`costlog/carpetas.py`, configurado en `costlog/carpetas.json`).
 
 ## Contents

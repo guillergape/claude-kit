@@ -72,6 +72,17 @@ Cuando un fichero de `<DESCARGAS>` se haya usado del todo (movido a su sitio, o 
 Antes de sobrescribir algo ya entregado o enviado, guarda la versión anterior con `<PY> "<LAB>/extras/old.py" archive <fichero>` (va a `old/` con la fecha). Para quitar algo de mis carpetas, `old.py trash <fichero>` (va a `_papelera/` y se borra solo a los 60 días) o la papelera; nunca borrado definitivo.
 <!-- /kit:old -->
 
+<!-- kit:wait -->
+## Prompts en espera — `wait>` / `go>` / `trigger>`
+Hook `<LAB>/costlog/wait.py` (desde `costlog.py`, 0 tokens; todos los comandos: escribe `wait>`). Los prompts se guardan en `~/.claude/wait/`, cada uno ligado a su chat. Solo valen las formas exactas.
+- **`wait> <prompt>`** se guarda y se bloquea: no lo ves. Los números van antes del `>` (`go 3>`, `wait drop 3>`).
+- **`go>` / `go n> [texto]`**: el hook te pasa el prompt; hazlo **exactamente como si lo hubiera escrito yo**. Igual con lo que impriman `wait.py watch` / `fire` / `next`.
+- **`go all>`**: cuando cada uno salga bien, ejecuta el `next` que da el pie y haz lo que imprima; si uno falla o me necesita, para y dímelo.
+- **`wait plan> <prompt>`**: organízalo en prompts en espera siguiendo los pasos del hook (fases autocontenidas, o uno solo si es mejor), sin hacer el trabajo.
+- **`trigger> <evento>`**: sigue los pasos del hook y **no abras `~/.claude/wait/`**. Si el chat no es uno claro, pregúntame. Al juzgar si otro chat acabó, sé estricto (hecho = completó la tarea sin errores); en la duda no lo lances: rearma y dímelo.
+- **Preparar prompts para luego:** cada uno autocontenido (rutas absolutas, qué es «hecho», qué reglas seguir), en una lista JSON en el scratchpad → `<PY> "<LAB>/costlog/wait.py" add <fichero>`. Enséñame la lista y acaba con «escribe `go all>`».
+<!-- /kit:wait -->
+
 <!-- kit:leftover -->
 ## Lista leftover (límite semanal que sobra)
 Lista: `<LAB>/leftover.md`. Reinicio semanal de mi cuenta: <REINICIO_SEMANAL>.

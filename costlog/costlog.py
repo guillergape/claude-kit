@@ -23,6 +23,10 @@ except ImportError:
     send = None
 import carpetas  # folder mode `_<carpeta>:` (same folder, configured in carpetas.json)
 try:
+    import wait  # `wait>` / `go>` / `trigger>` (same folder); optional: delete wait.py if you don't use them
+except ImportError:
+    wait = None
+try:
     from textos import T  # texts in the person's language (textos.json next to this file); Spanish without it
 except ImportError:
     T = lambda s, **k: s.format(**k) if k else s
@@ -609,6 +613,7 @@ def first_prompt(sid):
 
 def main():
     hook = json.loads(sys.stdin.buffer.read() or b"{}")
+    held = wait and wait.hook(hook)  # blocks `wait>` and its listings; `go>` / `trigger>` / `wait plan>` -> output for Claude
     s = send and send.TRIGGER.match(hook.get("prompt", ""))
     if s:
         detach([sys.executable, send.__file__, "--window", s[1] or ""])
@@ -622,6 +627,8 @@ def main():
     if not m:
         first_prompt(hook.get("session_id"))
         carpetas.hook(hook)  # blocks or adds the folder when the prompt is `<carpeta>:` (or a y/n/m answer to it)
+        if held:
+            print(json.dumps(held))
         return
     par, ask, args = par_flag(m[1])
     pre, ok = parse(args)

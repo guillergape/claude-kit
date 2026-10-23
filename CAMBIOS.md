@@ -4,6 +4,11 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-23 — prompts en espera: `wait>` / `go>` / `trigger>`
+- **Nuevo `costlog/wait.py`** (opcional): `wait> <prompt>` lo guarda sin mandarlo (Claude no lo ve; un cierre de VS Code no lo pierde). Luego `go>` lo manda, `go all>` manda todos en cadena (cada uno solo si el anterior salió bien), `go reset>` al reiniciarse el límite de 5 h, `trigger> <evento>` cuando pase algo (p. ej. que otro chat acabe bien). También `wait plan>` (Claude lo parte en fases), `wait next>` (entra al acabar el turno), `wait edit>`, `wait drop>`. `wait>` solo lista todo. Mensajes en inglés. `go reset>` y `trigger auto>` usan el Programador de tareas en Windows; en Mac/Linux, un proceso suelto (no sobrevive a reiniciar el ordenador).
+- **costlog** (`costlog/costlog.py`): llama a `wait.py` si está (bórralo si no lo quieres).
+- **settings** (`plantillas/settings.fragment.json`): hook `Stop` → `wait.py stop` (para `wait next>`). **CLAUDE.md global**: sección nueva `kit:wait`. Para tenerlo: copia `wait.py` y `costlog.py`, añade el hook y la sección (`actualiza kit >` lo hace).
+
 ## 2026-10-23 — Moodle detrás de una VPN: GlobalProtect se conecta solo
 - **moodle** (`modulos/moodle/moodle.py`, `SKILL.md` → *VPN*, `moodle.example.json`): clave nueva opcional `"vpn"` en `moodle.json`, un comando que `moodle.py` ejecuta una vez ante un `HTTP 403` antes de reintentar. Sin ella, nada cambia (solo el aviso del 403).
 - **Nuevo `modulos/moodle/vpn-globalprotect.ps1.txt`** (Windows): pulsa *Connect* en GlobalProtect sin tocar ratón ni teclado; con SSO el login se completa solo en el navegador si ya tiene la sesión, y luego cierra esa ventana. No escribe nunca nada. Para instalarlo: `modulos/uc3m/README.md` → *Fuera de la uni, VPN*.

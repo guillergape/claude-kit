@@ -10,6 +10,9 @@
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command", "command": "<PY> \"<LAB>/costlog/costlog.py\"", "timeout": 30 } ] }
     ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "<PY> \"<LAB>/costlog/wait.py\" stop", "timeout": 30 } ] }
+    ],
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "<PY> \"<LAB>/extras/old.py\" purge \"<CARPETA RAIZ A VIGILAR>\" --days 60", "timeout": 30 } ] }
     ]
