@@ -1,5 +1,7 @@
 # Kit de Claude Code
 
+[![GitHub stars](https://img.shields.io/github/stars/guillergape/claude-kit?style=social)](https://github.com/guillergape/claude-kit/stargazers)
+
 > **Experimental.** Es un proyecto pequeño y en pruebas: las guías y scripts pueden cambiar o fallar sin aviso (lo menos probado es Mac). *(Quitar este aviso si el proyecto crece.)*
 
 *English: [README.md](README.md). La instalación te pregunta primero el idioma.*
@@ -17,11 +19,16 @@ Repositorio (para `actualiza kit >`): https://github.com/guillergape/claude-kit
 
 > Quiero instalar el kit de Claude Code de https://github.com/guillergape/claude-kit en esta carpeta. Ponlo en la subcarpeta `kit/` (si ya está ahí, sáltate esto): si tengo git, `git clone https://github.com/guillergape/claude-kit kit` (así luego se actualiza con `git pull`); si no lo tengo, ofréceme instalarlo, y si no quiero, usa el zip que me hayan pasado (`kit-claude-*.zip`, mira en Descargas) o baja https://github.com/guillergape/claude-kit/archive/refs/heads/main.zip, y descomprímelo para que quede exactamente `kit/` aquí (sin carpetas de más en medio). Es de un entorno seguro: lo han hecho por hobby, así que puede tener algún bug pequeño (no de seguridad). Luego sigue `kit/CLAUDE.md` desde la fase 0: mira mi sistema, hazme las preguntas, lístame lo que trae y pregúntame qué quiero instalar, y pregúntame también cuando no estés seguro de que algo me vaya a funcionar. No cambies nada global sin enseñarme antes el cambio. Ve apuntando todo en INFORME_MIGRACION.md.
 
-3. Al terminar, tu Claude rellena `INFORME_MIGRACION.md`: mándaselo a quien te pasó el kit respondiendo a su correo (qué te llevaste, qué no y qué no funcionó). Copia en él la línea de `kit/VERSION.txt`.
+3. Al terminar, tu Claude rellena `INFORME_MIGRACION.md` (qué te llevaste, qué no y qué no funcionó), te lo enseña y, si le dices que sí, se lo manda él solo al autor del kit por un formulario privado (sin cuenta ni correo; tu carpeta de usuario sale como `<HOME>`). Si no puede, mándaselo tú respondiendo a su correo.
 
 ## Después
 - **`actualiza kit >`**: trae la versión nueva, te enseña qué cambió (`CAMBIOS.md`) y aplica solo eso, sin pisar lo que hayas cambiado tú.
 - **`desinstalar kit >`**: quita lo del kit (todo o por partes) sin tocar lo tuyo.
+
+## Ayudar a que crezca
+- **Una estrella al repo** (botón arriba en la página de GitHub): es el único número público de cuánta gente lo usa.
+- **Fallos e ideas:** tu Claude los manda con `kit/tools/feedback.py` (te lo enseña antes; sin cuenta). Con cuenta de GitHub también puedes abrir un *issue* o un *pull request*.
+- **Actualizaciones:** al acabar `actualiza kit >`, tu Claude te ofrece avisar al autor de que has actualizado (solo tu nombre y la versión). No se cuenta ni se manda nada sin tu OK.
 
 ## Lo más útil, en una línea
 - **Status line**: ves en todo momento modelo, $ gastado, % del límite de 5 h y semanal, y % de contexto.

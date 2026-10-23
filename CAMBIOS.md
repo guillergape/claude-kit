@@ -4,6 +4,10 @@
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
      `actualiza kit >` enseña las entradas posteriores a su versión. -->
 
+## 2026-10-23 — el informe llega al autor sin correo (y avisar de que has actualizado)
+- **Nuevo `tools/feedback.py`** (solo stdlib): manda `INFORME_MIGRACION.md` al autor del kit por un formulario privado, sin cuenta ni correo. Primero enseña qué se mandaría (tu carpeta de usuario sale como `<HOME>`); solo envía con `--enviar`, después de tu OK. Sin informe (`--nombre … --tipo actualizacion`) manda solo tu nombre, la versión y el tipo, para que el autor sepa cuánta gente usa y actualiza el kit. Si no puede (sin internet), plan B: el correo de siempre. `--test` lo prueba en local.
+- **Guía** (`CLAUDE.md`, fase 9 pasos 6–7 y regla 7), `INFORME_MIGRACION.md` (comentarios), `ACTUALIZAR.md` (paso 5: al acabar una actualización sin nada que reportar, tu Claude te ofrece ese aviso en una línea, una vez) y `LEEME.md`/`README.md` (paso 3, *Ayudar a que crezca*, insignia de estrellas): usan `feedback.py` en vez de pedirte que respondas al correo, y cómo aportar (estrella, feedback, issues/PRs). Nada que actualizar en lo que tienes instalado.
+
 ## 2026-10-23 — prompts en espera: `wait>` / `go>` / `trigger>`
 - **Nuevo `costlog/wait.py`** (opcional): `wait> <prompt>` lo guarda sin mandarlo (Claude no lo ve; un cierre de VS Code no lo pierde). Luego `go>` lo manda, `go all>` manda todos en cadena (cada uno solo si el anterior salió bien), `go reset>` al reiniciarse el límite de 5 h, `trigger> <evento>` cuando pase algo (p. ej. que otro chat acabe bien). También `wait plan>` (Claude lo parte en fases), `wait next>` (entra al acabar el turno), `wait edit>`, `wait drop>`. `wait>` solo lista todo. Mensajes en inglés. `go reset>` y `trigger auto>` usan el Programador de tareas en Windows; en Mac/Linux, un proceso suelto (no sobrevive a reiniciar el ordenador).
 - **costlog** (`costlog/costlog.py`): llama a `wait.py` si está (bórralo si no lo quieres).
@@ -13,7 +17,6 @@
 - **moodle** (`modulos/moodle/moodle.py`, `SKILL.md` → *VPN*, `moodle.example.json`): clave nueva opcional `"vpn"` en `moodle.json`, un comando que `moodle.py` ejecuta una vez ante un `HTTP 403` antes de reintentar. Sin ella, nada cambia (solo el aviso del 403).
 - **Nuevo `modulos/moodle/vpn-globalprotect.ps1.txt`** (Windows): pulsa *Connect* en GlobalProtect sin tocar ratón ni teclado; con SSO el login se completa solo en el navegador si ya tiene la sesión, y luego cierra esa ventana. No escribe nunca nada. Para instalarlo: `modulos/uc3m/README.md` → *Fuera de la uni, VPN*.
 - **uc3m** (`README.md`): Aula Global solo funciona desde la red de la UC3M o con su VPN (desde el 2026-10-22); cómo dejar la VPN automática.
-
 
 ## 2026-10-22 — arreglos de una instalación en Windows (UC3M)
 - **moodle** (`modulos/moodle/moodle.py`, `SKILL.md`):

@@ -50,4 +50,4 @@ Enséñale: las novedades (paso 2.1), una tabla `componente · qué cambia · �
 ## Paso 5 — Comprobar y apuntar
 1. Si cambió algún hook o la status line: que reinicie Claude Code y escriba algo (sin errores de hooks; status line visible).
 2. En `<LAB>/INFORME_MIGRACION.md`, sección *Actualizaciones*: fecha, versión vieja → nueva, qué se aplicó, qué se fusionó, qué dejó sin aplicar y por qué, fallos.
-3. Si hubo algo que reportar al autor del kit (un fallo, una fusión difícil), díselo en una línea: puede mandarle el informe.
+3. Si hubo algo que reportar al autor del kit (un fallo, una fusión difícil), díselo en una línea y, con su OK, mándale el informe: `<PY> kit/tools/feedback.py <LAB>/INFORME_MIGRACION.md --nombre "<Nombre>" --tipo actualizacion` (vista previa) y luego con `--enviar` (plan B: correo). Si no hay nada que reportar, ofrécele en una línea solo el aviso («¿aviso al autor de que has actualizado? Solo va tu nombre y la versión»): con su OK, `<PY> kit/tools/feedback.py --nombre "<Nombre>" --tipo actualizacion --enviar` (sin informe). Si dice que no, no vuelvas a preguntarlo en esta actualización; código 2 = sin formulario, se deja.

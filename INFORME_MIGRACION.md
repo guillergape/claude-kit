@@ -1,8 +1,9 @@
 # Informe de instalación del kit — <Nombre>
 
 <!-- Se copia a <LAB>/INFORME_MIGRACION.md en la fase 0 y lo va rellenando Claude DURANTE la instalación (al terminar
-     cada fase), así sirve también para retomar tras un /clear. Al final la persona se lo manda a quien le pasó el kit
-     respondiendo a su correo. Después sigue vivo: "Uso de cada componente" y "Actualizaciones" se van rellenando. -->
+     cada fase), así sirve también para retomar tras un /clear. Al final se manda al autor del kit con kit/tools/feedback.py
+     (fase 9; plan B: correo). Después sigue vivo: "Uso de cada componente" y "Actualizaciones" se van rellenando.
+     Los títulos ## no se cambian ni se reordenan (se pueden traducir): feedback.py separa por ellos "Qué falló" e "Ideas". -->
 
 ## Sistema
 - Versión del kit (copia la línea de `kit/VERSION.txt`): 
@@ -53,6 +54,6 @@
 <!-- Una entrada por `actualiza kit >` (ACTUALIZAR.md): fecha · versión vieja → nueva · qué se aplicó · qué se fusionó · qué no y por qué · fallos. -->
 
 ## Uso de cada componente
-<!-- La actualiza Claude (regla "Herramientas del kit" del CLAUDE.md global). costlog> y blocklog> se cuentan por las filas de costlog.csv / blocklog.csv; send> no queda contado. Reenvía este informe al autor del kit cuando lo pida. -->
+<!-- La actualiza Claude (regla "Herramientas del kit" del CLAUDE.md global). costlog> y blocklog> se cuentan por las filas de costlog.csv / blocklog.csv; send> no queda contado. Cuando el autor lo pida, mándalo con `kit/tools/feedback.py <este fichero> --nombre "<Nombre>" --tipo uso` (enséñalo antes; con OK, --enviar). -->
 | Componente | Usos | Recordatorios | Último uso |
 |---|---|---|---|
