@@ -2,7 +2,9 @@
 
 <!-- Una entrada por versión, la más nueva arriba. La versión es la de VERSION.txt (fecha del fichero más nuevo,
      AAAA-MM-DD_HHMM). Escrita para quien tiene el kit instalado: qué cambia para él y en qué componente.
-     `actualiza kit >` enseña las entradas posteriores a su versión. -->
+     `actualiza kit >` enseña las entradas posteriores a su versión.
+     Si la entrada merece aviso a los suscriptores, pon justo bajo su título una línea `<!-- importante: sí`, cerrada
+     igual que este comentario. -->
 
 ## 2026-10-23 — el informe llega al autor sin correo (y avisar de que has actualizado)
 - **Nuevo `tools/feedback.py`** (solo stdlib): manda `INFORME_MIGRACION.md` al autor del kit por un formulario privado, sin cuenta ni correo. Primero enseña qué se mandaría (tu carpeta de usuario sale como `<HOME>`); solo envía con `--enviar`, después de tu OK. Sin informe (`--nombre … --tipo actualizacion`) manda solo tu nombre, la versión y el tipo, para que el autor sepa cuánta gente usa y actualiza el kit. Si no puede (sin internet), plan B: el correo de siempre. `--test` lo prueba en local.
