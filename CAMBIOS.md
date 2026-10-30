@@ -7,6 +7,11 @@
      justo bajo su título una línea `<!-- importante: sí`, cerrada igual que este comentario: va al aviso mensual
      a los suscriptores. -->
 
+## 2026-10-30 — empezar la ventana de 5 h a una hora fija, con el ordenador apagado
+<!-- importante: sí -->
+- **Nueva guía `guias/ventana-5h.md`** (opcional): dos rutinas en la nube (invierno y verano, para no depender del cambio de hora) que cada día a la hora que elijas mandan «OK» con el modelo más pequeño, y así la ventana de 5 h empieza ahí aunque el ordenador esté apagado. Casi no gasta límite. Tu Claude las crea con la skill `schedule`; se pueden borrar desde claude.ai/code/routines. Creadas y programadas en una cuenta del autor; que abran la ventana de 5 h aún está sin comprobar.
+- **Guía** (`CLAUDE.md`, fase 8): la ofrece solo si la quieres. Nada que actualizar en lo que tienes instalado; si la quieres, pídele a tu Claude «ventana de 5 h».
+
 ## 2026-10-30 — actualización general: bloqueos que se apuntan solos, `allow>`, vault, `login>`, Ctrl+Y en el prompt
 - **costlog** (`costlog/costlog.py`, `textos.en.json`, `costlog.md`): **blocklog se apunta solo**: con cualquier mensaje, como mucho cada 10 min, lee aparte los transcripts de todos los chats y subagentes y apunta cada bloqueo nuevo (una fila por incidente, columna nueva `ids` para no duplicar; la solución se rellena sola si el mismo comando pasa después). `blocklog> <solución>` pasa a ser opcional. Tus filas viejas se respetan. El primer escaneo apunta también los bloqueos de antes: si no los quieres, pon una fecha en `START`. **`allow>` / `allow N>`**: copia al portapapeles tu autorización para la última denegación del clasificador en este chat, con la acción exacta; la pegas y la envías tú. `vault>` y `login>` si los instalas (abajo). `costlog> 4` solo apunta directo con nota de resultado `—` y correcciones `0`.
 - **Nuevo `vault/`** (opcional): los tokens y claves de API de tus scripts en el almacén de credenciales del sistema (`from vault import get`), ventana con `vault>`; Claude nunca ve los valores. Probado en Windows; Mac/Linux sin probar.

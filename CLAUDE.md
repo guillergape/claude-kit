@@ -43,7 +43,7 @@ Eres el Claude Code de la persona que ha recibido este kit. Su autor ha montado 
 | `login/` | `login> <cuenta>`: cambiar la cuenta de Claude Code; en Windows, solo (lee el código del correo de su Gmail y pulsa Authorize) | 0 | varias cuentas de Claude; automático: **Windows** + Edge + `uv` o `uiautomation`, Gmail por el MCP o el vault | su `README.md` |
 | `plantillas/` | CLAUDE.md global y del lab, `personas.md`, `kit-datos.yaml`, fragmento de settings, lista leftover | — | — | — |
 | `DESINSTALAR.md` / `ACTUALIZAR.md` | `desinstalar kit >` / `actualiza kit >`, sin tocar lo suyo | — | — | — |
-| `guias/` | Conocimiento: permisos y bloqueos, calendario, email, uni (estudio, Wuolah), Instinct, lab y memoria, trucos | — | — | — |
+| `guias/` | Conocimiento: permisos y bloqueos, calendario, email, uni (estudio, Wuolah), Instinct, lab y memoria, trucos, ventana de 5 h | — | — | — |
 | **Módulos** (`modulos/`) | `moodle` (Moodle por API) · `uc3m` · `asignaturas` (un tutor por asignatura) · `grok-bot` (convivir con otro agente) | — | según módulo | `modulos/README.md` |
 
 ## Por sistema operativo
@@ -119,6 +119,7 @@ Con `guias/uni.md`: pregúntale cómo estudia y qué le encaja. Monta solo lo qu
 - `plantillas/leftover.md` → `<LAB>/leftover.md` + la sección `kit:leftover` del CLAUDE.md global.
 - `guias/permisos-y-bloqueos.md`: ofrécele `/auto-mode-setup` y las excepciones `autoMode.allow` que le sirvan. El `autoMode.environment` que genera es genérico: propónle añadir una línea por cada carpeta de confianza fuera del lab (la de la uni) y por cada fichero secreto (p. ej. `~/.moodle-token`: nunca se lee en voz alta ni sale del ordenador). Guarda en su memoria lo útil (p. ej. «caída del clasificador = reintentar una vez y luego `! comando`»).
 - `guias/instinct.md`, Overleaf y demás de `guias/trucos.md`: solo si le interesan (memoria `reference` o en la carpeta donde lo vaya a usar). `guias/trucos.md` → *Windows y el terminal* solo aplica en Windows.
+- `guias/ventana-5h.md`: solo si quiere que la ventana de 5 h empiece a una hora fija (rutinas en la nube, funcionan con el ordenador apagado). Pregunta hora, días y zona horaria; Claude las crea con `schedule`.
 - Plugins opcionales (`guias/trucos.md`): solo si los pide.
 
 ## Fase 9 — Cierre
