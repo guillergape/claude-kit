@@ -33,7 +33,8 @@ Repositorio (para `actualiza kit >`): https://github.com/guillergape/claude-kit
 ## Lo más útil, en una línea
 - **Status line**: ves en todo momento modelo, $ gastado, % del límite de 5 h y semanal, y % de contexto.
 - **`costlog> 4 5 nota`** al acabar una sesión: apunta coste, tiempo, modelo y tu nota en un CSV, sin tokens. Con el tiempo sabes qué modelo/esfuerzo merece cada tarea.
-- **`blocklog> cómo se arregló`**: apunta los bloqueos de permisos del modo auto con el error exacto.
+- **blocklog**: los bloqueos de permisos del modo auto de todos tus chats se apuntan solos en un CSV, con el error exacto (`blocklog> cómo se arregló` añade la solución). **`allow>`**: te deja en el portapapeles la autorización para la última denegación, con la acción exacta, para pegarla tú.
+- **vault** (`vault>`): tokens y claves de tus scripts en el almacén de credenciales del sistema; Claude no los ve. **`login> cuenta`**: cambia de cuenta de Claude Code (en Windows, sin teclear el código del correo).
 - **`_<carpeta>: tarea`**: trabaja solo en esa carpeta (la encuentra un script por nombre, también con niveles: `_prog_p2:`).
 - **`qq > pregunta`**: pregunta rápida que no cambia nada (`prog_p2 qq > …` = pregunta sobre esa carpeta).
 - **md2pdf**: apuntes/resúmenes en Markdown con fórmulas → PDF bonito.

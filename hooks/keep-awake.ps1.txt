@@ -103,7 +103,9 @@ switch ($Mode) {
         if (-not $created) { exit 0 }   # another session's saver is already up
         Add-Input
         Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-        $orig = Get-Bright   # whatever the user had (e.g. 50 at night), restored on input
+        # whatever the user had (e.g. 50 at night), restored on input. A leftover file means a
+        # killed saver left the screen at 0: its value is the real one, not the current 0.
+        $orig = if (Test-Path $BrightFile) { Get-Content $BrightFile } else { Get-Bright }
         if ($null -ne $orig) { Set-Content $BrightFile $orig; Set-Bright 0 }
         $start = [KA.Input]::Last()
         $t0 = Get-Date
@@ -126,7 +128,9 @@ switch ($Mode) {
         try {
             while ([KA.Input]::Last() -eq $start) {
                 if (-not $form.Visible -and ((Get-Date) - $t0).TotalSeconds -ge $stage2) {
-                    $form.Show(); [Windows.Forms.Cursor]::Hide()
+                    # pwsh 7 started hidden drops TopMost on Show(): the form ended up behind the
+                    # other windows. Re-setting it after Show() works (harmless in 5.1).
+                    $form.Show(); $form.TopMost = $false; $form.TopMost = $true; [Windows.Forms.Cursor]::Hide()
                 }
                 [Windows.Forms.Application]::DoEvents()
                 Start-Sleep -Milliseconds 250

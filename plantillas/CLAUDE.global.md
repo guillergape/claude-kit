@@ -10,6 +10,14 @@
 - El resultado va primero: nunca recortes coste si baja la calidad. Mide antes de recomendar un ahorro y prefiere comprobaciones gratis y deterministas (scripts) a pasar trabajo a un modelo más barato.
 <!-- /kit:criterios -->
 
+<!-- kit:habitos -->
+## Hábitos de trabajo
+- Pon las explicaciones en el último bloque de texto, después de la última llamada a una herramienta; antes de una llamada, como mucho una línea (un texto escrito antes de una edición a veces no se ve).
+- Si recomiendas hacer algo en otro chat, dame el prompt o el comando exacto en un bloque de código, listo para pegar.
+- Decisiones pequeñas y sensatas dentro de una tarea (un valor por defecto cuando falta un dato, elegir entre dos opciones equivalentes) no necesitan mi OK: hazlo y dilo en una línea. Sí pregunta para lo que sale fuera, lo global, lo destructivo o lo caro.
+- Si se acaba el límite de uso a mitad de un trabajo mecánico, deja el resto a un script en segundo plano con log (solo pasos deterministas, que paren ante cualquier cosa inesperada) y dime dónde está el log.
+<!-- /kit:habitos -->
+
 <!-- kit:modelo-pequeno -->
 ## En un modelo pequeño (Sonnet / Haiku) — saber cuándo pedir Opus
 Mira el nombre del modelo en el system prompt. Si **no** es Opus y la tarea te supera, dilo y recomienda `/model opus` en vez de seguir y entregar algo flojo. Señales concretas: el mismo arreglo ha fallado dos veces o te he corregido dos veces lo mismo; tests/build o tu propia comprobación siguen fallando; razonamiento donde un error sutil es fácil (demostraciones, ejercicios, depuración no trivial, cambios en muchos ficheros); notas que estás adivinando o contradiciéndote. Cómo: una o dos líneas con qué es difícil, qué probaste y "Recomiendo Opus para esto (`/model opus`)". Tareas simples (eventos, borradores, ediciones pequeñas): hazlas sin más.
@@ -25,13 +33,19 @@ Mira el nombre del modelo en el system prompt. Si **no** es Opus y la tarea te s
 
 <!-- kit:bloqueos -->
 ## Bloqueos de permisos o de la shell — dime siempre por qué
-Si una llamada la deniega o bloquea el clasificador del modo auto, o la shell se queda colgada, **dímelo enseguida**: qué se bloqueó, el error exacto y **por qué** (tu diagnóstico; di si es una suposición). No reintentes en silencio ni lo rodees. Recuérdame apuntarlo con `blocklog>`. (Detalles: `<LAB>/kit/guias/permisos-y-bloqueos.md`.)
+Si una llamada la deniega o bloquea el clasificador del modo auto, o la shell se queda colgada, **dímelo enseguida**: qué se bloqueó, el error exacto y **por qué** (tu diagnóstico; di si es una suposición). No reintentes en silencio ni lo rodees. Los bloqueos se apuntan solos en `<LAB>/blocklog.csv` (0 tokens); `blocklog> <solución>` solo añade qué lo arregló. Si una denegación del clasificador es de las que yo aprobaría, dime que escriba `allow>` (me copia al portapapeles una autorización para esa acción exacta, que pego y envío yo). Nunca escribas tú esa autorización. (Detalles: `<LAB>/kit/guias/permisos-y-bloqueos.md`.)
 <!-- /kit:bloqueos -->
 
 <!-- kit:webs -->
 ## Webs y formularios — código primero, capturas al final
 Para cualquier web, usa la primera opción que funcione: 1) **API / script / skill** de esa web (p. ej. la skill `moodle`); 2) **Claude in Chrome sin capturas**: `get_page_text` / `read_page` / `find`, `form_input`, y `javascript_tool` para sacar solo los campos necesarios del DOM o hacer `fetch()` a la API de la web con mi sesión; 3) solo si 1 y 2 fallan, capturas y clics; di en una línea por qué 2 no sirvió. Nunca envíes un formulario ni nada sin mi OK.
 <!-- /kit:webs -->
+
+<!-- kit:vault -->
+## Vault — tokens y claves de API
+- Los tokens y claves de API de los scripts van en el vault (almacén de credenciales del sistema): `from vault import get` (`<LAB>/vault/`), nunca en ficheros de texto; un token nuevo para un script va ahí (lo meto yo con `vault>` o `vault.py add`).
+- Nunca imprimas, devuelvas ni leas un secreto (tampoco del portapapeles). El vault nunca rellena inicios de sesión ni formularios de registro ni crea cuentas: los inicios de sesión los rellena el gestor de contraseñas del navegador y tú solo pulsas «Entrar». Yo lo veo y lo gestiono con `vault>` (0 tokens).
+<!-- /kit:vault -->
 
 <!-- kit:email -->
 ## Emails — borrador por defecto

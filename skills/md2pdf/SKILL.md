@@ -50,6 +50,8 @@ Note (migrated kit): the blank-space checks and some layout rules only switch on
 Before printing, the page script:
 - **Keeps every title with its first block:** each heading `h1–h6`, and each *pseudo-title* (a paragraph that is only bold text, like `**Choosing $\mathbf v_c$:**`), goes in a `div.keep` (`break-inside: avoid`) together with the block after it; consecutive titles are chained. A long list keeps only its first item with the title. A block too tall to move whole (> ~11 cm; **~4 cm in `esqCLI`**, so esqs stay compact) is not moved: the title gets `break-after: avoid`, so only it and the block's first lines go to the next page. Manual `break-inside:avoid` wrappers are no longer needed (old ones are harmless). The PDF is then scanned and any page that still ends with a title gives a `WARNING` (see above).
 - **Never breaks short inline maths:** an inline formula narrower than 45 % of the line can't be split (KaTeX would break after `<`, `>`, `=`), and it is glued to the `(` / `[` right before it and to `)` `.` `,` `;` `:` right after it, so `($>0$)` never prints as `(>` | `0)` or `(>0` | `)`.
+- **Keeps a display formula's purple condition beside it** (done in Python when building the HTML): `$$…$$<span class="cond">…</span>`, in a paragraph or inside a box `<div>`, becomes one centred flex line (formula + cond, 14 px apart). The cond drops below only when the formula is too wide. A blank line between `$$…$$` and the span still makes it a separate paragraph, so never leave one.
+- **Highlights cover tall inline maths:** an inline background only spans the text line, so `\dfrac` numerators/denominators stuck out of `hl`/`hl-f`/`hl-def`/`hl-asm`/`hl-case`. A highlight holding only maths is one inline-block, a clean rectangle as tall as the formula; one mixing text and maths also paints KaTeX's pieces at full height.
 
 ## Where files go
 
@@ -66,5 +68,7 @@ Before printing, the page script:
 - Separate paragraphs with a blank line (inside a blockquote, a line with just `>`). A line that starts with `**Bold:**` right under another line joins that paragraph.
 - Markdown isn't processed inside an HTML block written on one line: use `<strong>`/`<em>` there, or put the Markdown on its own lines with blank lines around it.
 - Tables (GitHub pipe tables), blockquotes (render as highlighted boxes — good for key results/warnings), code blocks, `---` rules and relative image paths all work.
+- Highlighted / boxed display formulas (`<div class="hl-f|hl-def|hl-asm|hl|hl-case|box…">$$…$$</div>`) shrink to the formula's width, centred. Add `wide` (`<div class="hl-f wide">`) for margin-to-margin, only for the most important ones. Inline `<span>`s are unaffected.
+- Optional extra classes: `box-def` (green box: pure definition formula), `box-g` / `grey-f` (grey box / grey text: formulas that are on the exam formula sheet).
 - No `<details>`/collapsible content; nothing interactive.
 - After **any** later edit to the .md, regenerate the PDF so both stay in sync.

@@ -1,5 +1,5 @@
 {
-  "_LEEME": "Fragmentos para FUSIONAR en ~/.claude/settings.json (nunca copiar tal cual: mantener lo que ya haya). Rellenar con kit/rellenar.py (<PY>, <LAB>, <HOME>). Las claves que empiezan por _solo_windows se fusionan SOLO en Windows (hooks en 'hooks', reglas en 'permissions.allow') y luego se borran; en Mac/Linux se borran sin más. Borrar también esta clave _LEEME.",
+  "_LEEME": "Fragmentos para FUSIONAR en ~/.claude/settings.json (nunca copiar tal cual: mantener lo que ya haya). Rellenar con kit/rellenar.py (<PY>, <LAB>, <HOME>). Las claves que empiezan por _solo_windows se fusionan SOLO en Windows (hooks en 'hooks', reglas en 'permissions.allow') y luego se borran; en Mac/Linux se borran sin más. _opcional_prompt_redo_env solo si instala prompt-redo (kit/extras/prompt-redo/README.md): su contenido va dentro de 'env'. Borrar también esta clave _LEEME.",
 
   "statusLine": {
     "type": "command",
@@ -16,6 +16,10 @@
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "<PY> \"<LAB>/extras/old.py\" purge \"<CARPETA RAIZ A VIGILAR>\" --days 60", "timeout": 30 } ] }
     ]
+  },
+
+  "_opcional_prompt_redo_env": {
+    "CLAUDE_CODE_PLUGIN_DIRS": "<LAB>/extras/prompt-redo"
   },
 
   "_solo_windows_hooks_keep_awake": {

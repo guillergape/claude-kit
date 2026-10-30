@@ -9,3 +9,5 @@ __pycache__/
 .tmp.drivedownload/
 .tmp.driveupload/
 ~$*
+login/login.json
+login/login.log

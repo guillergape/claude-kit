@@ -27,7 +27,7 @@ Eres el Claude Code de la persona que ha recibido este kit. Su autor ha montado 
 | Componente | Qué hace | Tokens | Requisitos | Guía |
 |---|---|---|---|---|
 | `costlog/statusline.py` | Status line: modelo · $ · % límite 5 h · % semanal · % contexto; guarda instantáneas para costlog | 0 | Python 3.10+ | `costlog.md` |
-| `costlog/costlog.py` | Hook `UserPromptSubmit`: `costlog>` (coste/notas por sesión), `blocklog>` (bloqueos), `send>` y modo carpeta | 0 | Python 3.10+ con tkinter | `costlog.md` |
+| `costlog/costlog.py` | Hook `UserPromptSubmit`: `costlog>` (coste/notas por sesión), blocklog (bloqueos de todos los chats, se apuntan solos; `blocklog>` opcional), `allow>` (tu autorización para una denegación, al portapapeles), `send>`, modo carpeta, y `vault>` / `login>` si están instalados | 0 | Python 3.10+ con tkinter | `costlog.md` |
 | `costlog/carpetas.py` | Modo carpeta `_<carpeta>:` (resuelve la carpeta sin tokens, lista duplicados, busca fuera con y/n) y `<carpeta> qq >` | 0 | `carpetas.json` | docstring |
 | `costlog/send.py` | `send>`: ventana para revisar y enviar borradores de Gmail; `--send` para «envíalo tú» | 0 | MCP `google-workspace` autorizado | `guias/email.md` |
 | `costlog/wait.py` | `wait>` / `go>` / `trigger>`: guardar prompts sin mandarlos y lanzarlos a mano, en cadena, al reinicio de 5 h o cuando otro chat acabe | 0 (lo guardado) | tkinter (`wait edit>`); `go reset>` y `trigger auto>` con ventana nueva solo en **Windows** (Mac/Linux: proceso suelto que no sobrevive a reiniciar, y sin ventana nueva) | docstring |
@@ -38,6 +38,9 @@ Eres el Claude Code de la persona que ha recibido este kit. Su autor ha montado 
 | `transcribe/` | Transcribir audio/vídeo en local con Whisper | 0 | ~2 GB (venv + modelo) | README |
 | `extras/old.py` | Versiones viejas en `old/` con fecha y `_papelera/` que se vacía sola a los N días | 0 | — | `extras/README.md` |
 | `extras/timelog.py` | Cronometrar sesiones de estudio | 0 | — | `extras/README.md` |
+| `extras/prompt-redo/` | Mod: Ctrl+Y rehace en la caja del prompt (lo que quitó Ctrl+Z) | 0 | Claude Code con mods (`CLAUDE_CODE_PLUGIN_DIRS`); test automático solo en **Windows** | su `README.md` |
+| `vault/` | Contraseñas y tokens de sus scripts en el almacén del sistema (`get()`), ventana con `vault>`; Claude nunca ve los valores | 0 | `keyring`, tkinter; probado en **Windows** (Mac/Linux ¿?) | su `README.md` |
+| `login/` | `login> <cuenta>`: cambiar la cuenta de Claude Code; en Windows, solo (lee el código del correo de su Gmail y pulsa Authorize) | 0 | varias cuentas de Claude; automático: **Windows** + Edge + `uv` o `uiautomation`, Gmail por el MCP o el vault | su `README.md` |
 | `plantillas/` | CLAUDE.md global y del lab, `personas.md`, `kit-datos.yaml`, fragmento de settings, lista leftover | — | — | — |
 | `DESINSTALAR.md` / `ACTUALIZAR.md` | `desinstalar kit >` / `actualiza kit >`, sin tocar lo suyo | — | — | — |
 | `guias/` | Conocimiento: permisos y bloqueos, calendario, email, uni (estudio, Wuolah), Instinct, lab y memoria, trucos | — | — | — |
@@ -68,7 +71,7 @@ Solo lo que cambia. `SO` y `PY` se apuntan en `kit-datos.yaml` en la fase 0 y de
 5. **Elección.** Enséñale la tabla *Qué trae el kit* con una columna más, **¿te funcionará?** (✓ / ⚠ con motivo / ✗) según su sistema, y los **módulos que tocan por sus respuestas** (`modulos/README.md`: `MOODLE_URL` → `moodle`; UC3M → `uc3m`; estudia → `asignaturas`; otro agente → `grok-bot`). Pregunta qué quiere (selección múltiple) y apúntalo en `modulos:` y en el informe.
 
 ## Fase 1 — Reglas globales (`~/.claude/CLAUDE.md`)
-1. Repasa con la persona las secciones de `plantillas/CLAUDE.global.md` (una línea por sección: qué hace). Quédate solo con las que quiera. *Herramientas del kit*, *Personas*, *Desinstalar* y *Actualizar* se dejan para la fase 9; *Email* y *Calendario*, para la 6.
+1. Repasa con la persona las secciones de `plantillas/CLAUDE.global.md` (una línea por sección: qué hace). Quédate solo con las que quiera. *Herramientas del kit*, *Personas*, *Desinstalar* y *Actualizar* se dejan para la fase 9; *Email* y *Calendario*, para la 6; *Vault*, para la 8 (solo si instala `vault/`).
 2. `rellenar.py` sobre la plantilla y rellena con ella los `<…>` que queden de esas secciones.
 3. Fusiona en su `~/.claude/CLAUDE.md` (créalo si no existe) sin duplicar lo que ya tenga, **con las marcas `<!-- kit:… -->`**. Enseña el resultado antes de guardar. Copias `.bak-` / `.kit-` (regla 3). Cada sección → `instalado:`.
 
@@ -78,7 +81,7 @@ Solo lo que cambia. `SO` y `PY` se apuntan en `kit-datos.yaml` en la fase 0 y de
 3. `<LAB>/costlog/carpetas.json` desde `carpetas.example.json` con sus carpetas: `projects` (sus proyectos; el más profundo gana; con el módulo `asignaturas`, la carpeta del curso entre ellos), `step1` (dónde buscar primero si no está en el proyecto actual), `step2` (segunda ronda, tras preguntar). Prueba: `<PY> <LAB>/costlog/carpetas.py "<una carpeta suya>" "<raíz>"`.
 4. `statusLine`, hook `UserPromptSubmit` de `costlog.py` y, con `wait.py`, su hook `Stop` en `~/.claude/settings.json` (`plantillas/settings.fragment.json`, rellenado), más la sección `kit:wait` del CLAUDE.md global. Si ya tiene status line, pregunta.
 5. La persona reinicia Claude Code y comprueba: la status line sale; `_<carpeta>:` entra en esa carpeta (o lista duplicados); `<carpeta> qq > hola` responde sobre esa carpeta sin entrar en modo carpeta; `costlog> 4 - prueba` apunta una fila en `<LAB>/costlog.csv` (luego se puede borrar); `costlog>` solo abre la ventana; con `wait.py`, `wait> di hola` no llega a Claude, `wait>` lo lista y `go>` lo manda.
-6. Explícale `costlog>`, `blocklog>`, `wait>` y el modo carpeta en 4–5 líneas (o señala `costlog.md`).
+6. Explícale `costlog>`, blocklog (se apunta solo; `blocklog>` opcional), `allow>`, `wait>` y el modo carpeta en 4–5 líneas (o señala `costlog.md`). El primer escaneo de blocklog lee todos sus transcripts en segundo plano y apunta también los bloqueos viejos: si no los quiere, pon la fecha de hoy en `START` de `<LAB>/costlog/costlog.py`.
 
 ## Fase 3 — Skills
 1. Copia cada skill elegida a `~/.claude/skills/<nombre>/` (las del kit en `skills/`; `moodle` en `modulos/moodle/`) y pasa su SKILL.md por `rellenar.py`.
@@ -110,6 +113,9 @@ Con `guias/uni.md`: pregúntale cómo estudia y qué le encaja. Monta solo lo qu
 ## Fase 8 — Extras
 - `extras/old.py` → `<LAB>/extras/`: `--test`; si lo quiere, hook `SessionStart` con `purge` sobre su carpeta raíz y la sección `kit:old` en su CLAUDE.md global.
 - `extras/timelog.py`: solo si quiere cronometrar estudio.
+- `extras/prompt-redo/` (Ctrl+Y rehace en el prompt): solo si lo quiere; `extras/prompt-redo/README.md` (fusionar `env` de settings y `keybindings.json` sin pisar nada, regla 3; avisa del efecto secundario con el panel de diff).
+- `vault/`: si sus scripts usan tokens o claves de API (p. ej. el de Moodle), o quiere generar contraseñas; `vault/README.md`. Sección `kit:vault` del CLAUDE.md global. Nunca leas, imprimas ni copies un valor del vault: ni siquiera para comprobarlo (`--test` usa una entrada propia).
+- `login/` (`login> <cuenta>`): solo si tiene más de una cuenta de Claude; `login/README.md`. Rellena con ella `login.json` (sus cuentas y cómo se lee cada Gmail) y, para `"gmail": "vault"`, que haga ella `login.py --gmail-auth <email>`. No hagas tú un cambio de cuenta real: cambia la de todos sus chats, también este; la primera prueba la lanza ella con `login>`.
 - `plantillas/leftover.md` → `<LAB>/leftover.md` + la sección `kit:leftover` del CLAUDE.md global.
 - `guias/permisos-y-bloqueos.md`: ofrécele `/auto-mode-setup` y las excepciones `autoMode.allow` que le sirvan. El `autoMode.environment` que genera es genérico: propónle añadir una línea por cada carpeta de confianza fuera del lab (la de la uni) y por cada fichero secreto (p. ej. `~/.moodle-token`: nunca se lee en voz alta ni sale del ordenador). Guarda en su memoria lo útil (p. ej. «caída del clasificador = reintentar una vez y luego `! comando`»).
 - `guias/instinct.md`, Overleaf y demás de `guias/trucos.md`: solo si le interesan (memoria `reference` o en la carpeta donde lo vaya a usar). `guias/trucos.md` → *Windows y el terminal* solo aplica en Windows.
@@ -123,4 +129,4 @@ Con `guias/uni.md`: pregúntale cómo estudia y qué le encaja. Monta solo lo qu
 5. Completa `INFORME_MIGRACION.md` (qué se instaló y cómo se probó, qué no y por qué, qué falló con el error exacto, cambios fuera del lab, chats aparte, ideas para el autor).
 6. **Mandar el informe al autor** (sin correo ni cuentas): `<PY> kit/tools/feedback.py <LAB>/INFORME_MIGRACION.md --nombre "<Nombre>" --tipo instalacion` enseña lo que se mandaría (nombre, versión, *Qué falló*, *Ideas* y el informe entero; su carpeta de usuario sale como `<HOME>`) sin mandar nada. Díselo en una línea («va a un formulario que solo lee el autor del kit; ¿lo mando?») y, con su OK, repite con `--enviar`. Apunta la fecha de envío al final de *Sistema*. **Plan B**, si sale con código 2 (kit sin formulario, sin internet…) o no quiere usarlo: que **responda al correo del autor** con el informe (pegado o adjunto); si tiene herramienta de Gmail, deja un **borrador** de respuesta en ese hilo; lo envía la persona.
 7. **Una línea, una sola vez:** si el kit le ha servido, una estrella en el repo (la URL de `kit/LEEME.md`) ayuda a que crezca; con cuenta de GitHub también puede abrir issues o pull requests. No insistas ni lo hagas tú.
-8. Resumen final: los comandos nuevos que tiene (`costlog>`, `blocklog>`, `send>`, `wait>`/`go>`/`trigger>`, `_<carpeta>:`, `qq >`, `<carpeta> qq >`, `moodle >`, `<Asig> >`, `progress >`, `leftover …>`, `actualiza kit >`, `desinstalar kit >`, `/commands`; solo los instalados), en una línea cada uno.
+8. Resumen final: los comandos nuevos que tiene (`costlog>`, `blocklog>`, `allow>`, `send>`, `vault>`, `login>`, `wait>`/`go>`/`trigger>`, `_<carpeta>:`, `qq >`, `<carpeta> qq >`, `moodle >`, `<Asig> >`, `progress >`, `leftover …>`, `actualiza kit >`, `desinstalar kit >`, `/commands`; solo los instalados), en una línea cada uno.

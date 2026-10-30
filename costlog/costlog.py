@@ -1,6 +1,7 @@
 """UserPromptSubmit hook for `costlog>` and `blocklog>`: appends one row to costlog.csv / blocklog.csv, with no model
 tokens (the prompt is blocked, Claude never sees it).
 - `costlog> <nota sesión> <nota PDF> [nota libre]` (e.g. `costlog> 4 5 se dejó X`, `costlog> 4 - bien`) -> logged directly.
+  `costlog> 4` alone -> logged directly with the defaults: Nota PDF "—", Correcciones 0 (also the form's defaults).
 - `costlog>` alone, anything that doesn't fit that order, a limit reset mid-session, or costlog.csv locked (open in
   Excel) -> a window (separate process, so it can stay minimized as long as needed; usage data frozen at `costlog>`)
   asks for each field, pre-filled. It doesn't close until the row is really written.
@@ -11,12 +12,18 @@ Nota PDF: 1–5, or -, —, NA, n/a, no -> "—" (no PDF to grade); `pendiente` 
 Automatic: task (chat title), project, model + effort, nº questions, time (transcript); $ and 5 h / weekly %
 start→end (snapshots written by statusline.py). `python costlog.py --test` runs the self-check.
 `--mark` / `--leftover --task … --project … --model … --tokens … --minutes … [--note …]`: log a `leftover n>` subagent step.
-`blocklog> [solución]`: one blocklog.csv row for the tool calls blocked in this chat (auto-mode classifier outage or
-  denial, safety check, PreToolUse hook…) not logged yet; when, type, tool + command and exact error come from the transcript. With a
-  text and blocks found -> logged directly (text = solución); otherwise (alone, nothing found, CSV locked) -> the same
-  kind of window, pre-filled. Works during a classifier outage too: hooks don't go through the classifier.
+blocklog (automatic): on any prompt, at most every 10 min, a detached `--blockscan` logs every chat's blocked tool
+  calls (subagents too, read from disk; auto-mode classifier outage or denial, safety check, PreToolUse hook…) to
+  blocklog.csv, one row per incident (blocks < 30 min apart), deduped by tool_use id (column `ids`), solución
+  «pendiente» until the same call later goes through. `blocklog> [solución]`: logs this chat's now and puts the text
+  as solución of its pending rows; nothing found -> a window to log one by hand (e.g. a hung shell).
+  `--blockscan --dry`: what would be logged. Works during a classifier outage too: hooks don't go through the classifier.
+`allow>` / `allow N>`: the person's consent for this chat's last (Nth last) classifier denial -> clipboard; they read
+  it, paste it and send it themselves (the hook never sends it).
+`vault>`: opens the vault window (<LAB>/vault/vault.py, optional). `login> <cuenta>`: switches Claude Code's account
+  (<LAB>/login/login.py, optional). Both only if that script is installed; otherwise the prompt goes through.
 """
-import csv, json, os, re, statistics, subprocess, sys
+import csv, glob, json, os, re, statistics, subprocess, sys
 try:
     import send  # `send>` window lives in send.py (same folder); optional: delete send.py if you don't use send>
 except ImportError:
@@ -44,7 +51,17 @@ CSV_COLS = ["date", "session_id", "project", "task", "model_effort", "n_question
 BLOG_CSV = os.path.join(HERE, "..", "blocklog.csv")
 BTRIGGER = re.compile(r"^\s*blocklog\s*>(.*)$", re.I | re.S)
 BLOG_COLS = ["date", "time", "session_id", "project", "model_effort", "n_blocks", "tipo", "bloqueado", "error",
-             "intento", "solucion"]
+             "intento", "solucion", "ids"]  # ids = tool_use ids of the blocked calls (dedupe)
+ATRIGGER = re.compile(r"^\s*allow\s*(\d*)\s*>(.*)$", re.I | re.S)  # `allow>` / `allow N>`: consent text -> clipboard
+VTRIGGER = re.compile(r"^\s*vault\s*>\s*$", re.I)  # `vault>`: opens the vault window
+VAULT = os.path.join(HERE, "..", "vault", "vault.py")
+LTRIGGER = re.compile(r"^\s*login\s*>(.*)$", re.I | re.S)  # `login> <cuenta>`: switch account
+LOGIN = os.path.join(HERE, "..", "login", "login.py")
+PROJECTS = os.path.expanduser("~/.claude/projects")
+SCAN = os.path.join(STATE, "blocklog-scan.json")  # {"t": start of the last full scan}
+START = ""  # ISO date: blocks before it are ignored ("" = all; e.g. "2026-11-01" to skip the ones before installing)
+GAP = 30 * 60  # blocks of one transcript less than 30 min apart = one incident = one row
+PEND = "pendiente"
 BLOCK = re.compile(r"auto mode classifier|safety check|protected from removal|^<tool_use_error>Blocked|"
                    r"Tool permission request failed|Permission denied for .+ on this domain|PreToolUse:\w+ hook error")
 
@@ -73,6 +90,8 @@ def parse(args):
     """-> (prefill dict, ok). ok=False means: open the form."""
     toks = args.split(maxsplit=2)
     s = grade(toks[0]) if toks else None
+    if s and len(toks) == 1:  # `costlog> 4` alone: no PDF, 0 corrections
+        return {"ses": s, "pdf": "—", "corr": "0", "note": ""}, True
     p = grade(toks[1], pdf=True) if len(toks) > 1 else None
     if s and p:
         return {"ses": s, "pdf": p, "note": toks[2] if len(toks) > 2 else ""}, True
@@ -329,8 +348,8 @@ def cost_form(pre, extra, save):
     fields = [("task", T("Tarea"), pre.get("task", ""), T("Viene del título del chat; cámbialo si no dice qué se hizo. "
                "Corto: área/asignatura + comando + ref, p. ej. «Prog práctica 2», «Gmail: borrador al profe de Cálculo»."), False),
               ("ses", T("Nota sesión"), pre.get("ses", ""), T("1–5 (vale 4.5)."), False),
-              ("pdf", T("Nota PDF"), pre.get("pdf", ""), T("1–5 · - o NA si no hay PDF que valorar · pendiente."), False),
-              ("corr", T("Correcciones"), pre.get("corr", ""),
+              ("pdf", T("Nota PDF"), pre.get("pdf", "-"), T("1–5 · - o NA si no hay PDF que valorar · pendiente."), False),
+              ("corr", T("Correcciones"), pre.get("corr", "0"),
                T("Nº de respuestas que tuviste que corregir o repedir (? si no lo sabes)."), False),
               ("note", T("Nota libre"), pre.get("note", ""), T("Qué fue bien / mal (opcional)."), False)] + extra
 
@@ -459,8 +478,9 @@ def detach(cmd):
         subprocess.Popen(cmd, creationflags=flags, **args)
 
 
-def blocks(path, since=""):
-    """Blocked tool calls in the transcript after `since` (ISO timestamp) -> [{ts, tool, cmd, err}]."""
+def blocks(path, since="", oks=None):
+    """Blocked tool calls in the transcript after `since` (ISO timestamp) -> [{ts, id, tool, cmd, full, err, model, cwd}].
+    oks (dict): filled with "tool: cmd" -> [(ts, path)] of the calls that went through (a later success = solved)."""
     uses, out = {}, []
     try:
         f = open(path, encoding="utf-8")
@@ -468,7 +488,7 @@ def blocks(path, since=""):
         return []
     with f:
         for line in f:
-            if '"tool_use"' not in line and '"is_error":true' not in line:
+            if '"tool_use"' not in line and '"is_error":true' not in line and (oks is None or '"tool_result"' not in line):
                 continue
             try:
                 d = json.loads(line)
@@ -478,16 +498,21 @@ def blocks(path, since=""):
                 if not isinstance(x, dict):
                     continue
                 if x.get("type") == "tool_use":
-                    uses[x.get("id")] = x
-                elif x.get("type") == "tool_result" and x.get("is_error") and d.get("timestamp", "") > since:
+                    i = x.get("input") or {}
+                    cmd = i.get("command") or i.get("file_path") or i.get("url") or json.dumps(i, ensure_ascii=False)
+                    m = str((d.get("message") or {}).get("model", ""))
+                    uses[x.get("id")] = {"tool": x.get("name", "?"), "cmd": " ".join(str(cmd).split())[:150], "full": str(cmd),
+                                         "model": f"{pretty(m)} {d.get('effort') or '?'}" if m.startswith("claude") else "?",
+                                         "cwd": d.get("cwd") or ""}
+                elif x.get("type") == "tool_result" and d.get("timestamp", "") > since:
                     c = x.get("content")
                     t = c if isinstance(c, str) else " ".join(y.get("text", "") for y in c or [] if isinstance(y, dict))
-                    if BLOCK.search(t):
-                        u = uses.get(x.get("tool_use_id")) or {}
-                        i = u.get("input") or {}
-                        cmd = i.get("command") or i.get("file_path") or i.get("url") or json.dumps(i, ensure_ascii=False)
-                        out.append({"ts": d["timestamp"], "tool": u.get("name", "?"),
-                                    "cmd": " ".join(str(cmd).split())[:150], "err": t})
+                    u = uses.get(x.get("tool_use_id")) or {"tool": "?", "cmd": "", "full": "", "model": "?", "cwd": ""}
+                    # a call that ran and failed ("Exit code 1" + output quoting these words) isn't a block
+                    if x.get("is_error") and BLOCK.search(t[:400]) and not t.lstrip().startswith("Exit code"):
+                        out.append(dict(u, ts=d["timestamp"], id=x.get("tool_use_id", ""), err=t))
+                    elif oks is not None and not x.get("is_error") and u["cmd"]:
+                        oks.setdefault(f"{u['tool']}: {u['cmd']}", []).append((d["timestamp"], path))
     return out
 
 
@@ -503,6 +528,8 @@ def kind(t):
         return "hook PreToolUse"
     if re.search(r"safety check|protected from removal|Blocked:", t):
         return "safety check"
+    if "on this domain" in t:
+        return "Chrome: dominio sin permiso"
     return "otro"
 
 
@@ -517,7 +544,7 @@ def local(ts):
 
 
 def block_pre(bs):
-    """Blocks -> pre-filled form values (all the new blocks of a chat = one incident, one row)."""
+    """Blocks of one incident -> row values."""
     if not bs:
         return {}
     a, b = (local(x["ts"]).strftime("%H:%M") for x in (bs[0], bs[-1]))
@@ -527,33 +554,166 @@ def block_pre(bs):
             "error": uniq(short(x["err"]) for x in bs)[:900]}
 
 
-def seen_path(sid):
-    return os.path.join(STATE, f"blocklog-{sid}.json")
+def transcripts(sid=None, since=0.0):
+    """(path, chat id, is_subagent) of every chat's transcript and its subagents' (or only chat `sid`'s), modified
+    after `since` (epoch). Read from disk, so closed and idle chats count too."""
+    sub = os.path.join(PROJECTS, "*", sid or "*", "subagents", "*.jsonl")
+    for p in glob.glob(os.path.join(PROJECTS, "*", (sid or "*") + ".jsonl")) + glob.glob(sub):
+        try:
+            if os.path.getmtime(p) <= since:
+                continue
+        except OSError:  # deleted between glob and here (a chat being cleaned up)
+            continue
+        s = os.path.basename(os.path.dirname(p)) == "subagents"
+        yield p, os.path.basename(os.path.dirname(os.path.dirname(p))) if s else os.path.basename(p)[:-6], s
+
+
+def blog_rows():
+    try:
+        with open(BLOG_CSV, encoding="utf-8-sig", newline="") as f:
+            return list(csv.DictReader(f))
+    except OSError:
+        return []
+
+
+def blog_write(rows):
+    """Rewrites blocklog.csv (atomic). Raises OSError if it's locked (open in Excel): nothing written then."""
+    tmp = BLOG_CSV + ".tmp"
+    with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, BLOG_COLS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+    try:
+        os.replace(tmp, BLOG_CSV)
+    except OSError:
+        os.remove(tmp)
+        raise
+
+
+def logged_test(rows):
+    """-> f(chat id, block): True if a row already has it: by tool_use id, or (rows from before the ids column, some
+    written by hand like "20:3x") same chat + date + time within the row's span ±15 min, or the per-chat mark that
+    `blocklog>` wrote before the automatic scan (blocklog-<chat>.json)."""
+    ids, spans, until = set(), [], {}
+    for r in rows:
+        if r.get("ids"):
+            ids.update(r["ids"].split())
+            continue
+        t = re.findall(r"(\d{1,2}):(\d)([\dx])", r.get("time") or "")
+        if t:
+            at = lambda h, m, s, x: datetime.fromisoformat(f"{r['date']}T{int(h):02}:{m}{s.replace('x', x)}")
+            spans.append((r["session_id"].split(" ")[0], at(*t[0], "0").timestamp() - 900, at(*t[-1], "9").timestamp() + 960))
+    for p in glob.glob(os.path.join(STATE, "blocklog-*-*.json")):
+        try:
+            until[os.path.basename(p)[9:-5]] = json.load(open(p, encoding="utf-8"))["until"]
+        except (OSError, ValueError, KeyError):
+            pass
+
+    def test(sid, b):
+        t = local(b["ts"]).timestamp()
+        return b["id"] in ids or b["ts"] <= until.get(sid, "") or any(s == sid and a <= t <= z for s, a, z in spans)
+    return test
+
+
+def chat_of(path):
+    s = os.path.basename(os.path.dirname(path)) == "subagents"
+    return os.path.basename(os.path.dirname(os.path.dirname(path))) if s else os.path.basename(path)[:-6]
+
+
+def scan(rows, files, close_all=False, now=None):
+    """Adds to `rows` one row per unlogged incident (solución «pendiente») from `files` (transcripts()), and marks
+    pending rows solved when the same tool + command later went through. Open incidents (last block < GAP ago) wait
+    for a later scan unless close_all. -> (new rows, updated rows)."""
+    now = now or datetime.now().timestamp()
+    seen, oks, new = logged_test(rows), {}, []
+    for path, sid, sub in files:
+        bs = [b for b in blocks(path, START, oks) if not seen(sid, b)]
+        groups = []
+        for b in bs:
+            if groups and local(b["ts"]).timestamp() - local(groups[-1][-1]["ts"]).timestamp() <= GAP:
+                groups[-1].append(b)
+            else:
+                groups.append([b])
+        if groups and not close_all and now - local(groups[-1][-1]["ts"]).timestamp() < GAP:
+            groups.pop()  # still going on: a later scan logs it whole
+        for g in groups:
+            pre = block_pre(g)
+            new.append({"date": pre["date"], "time": pre["time"], "session_id": sid + (" (subagent)" if sub else ""),
+                        "project": os.path.basename(os.path.normpath(g[0]["cwd"])) if g[0]["cwd"] else "?",
+                        "model_effort": g[-1]["model"], "n_blocks": len(g), "tipo": pre["tipo"],
+                        "bloqueado": pre["bloqueado"], "error": pre["error"], "intento": "", "solucion": PEND,
+                        "ids": " ".join(x["id"] for x in g), "_end": local(pre["until"]).timestamp()})
+    rows += new
+    upd = []
+    for r in rows:
+        end = r.pop("_end", None)
+        if r.get("solucion") != PEND:
+            continue
+        hm = re.findall(r"\d{1,2}:\d\d", r.get("time") or "")
+        if end is None and hm:  # pending row from an earlier scan: its last HH:MM
+            end = datetime.fromisoformat(f"{r['date']}T{hm[-1]:0>5}").timestamp()
+        if end is None:
+            continue
+        later = [(ts, p) for k in r["bloqueado"].split(" | ") for ts, p in oks.get(k, []) if local(ts).timestamp() > end]
+        if later:
+            ts, p = min(later)
+            when = local(ts).strftime("%Y-%m-%d %H:%M")
+            r["solucion"] = (T("funcionó al reintentarlo en este chat ({w})", w=when)
+                             if chat_of(p) == r["session_id"].split(" ")[0]
+                             else T("funcionó después en el chat {c} ({w})", c=chat_of(p)[:8], w=when))
+            upd.append(r)
+    return new, upd
+
+
+def autoscan():
+    """At most every 10 min (on any prompt of any chat), a detached `costlog.py --blockscan`: 0 tokens, no wait."""
+    p = os.path.join(STATE, "blocklog-spawn")
+    try:
+        if datetime.now().timestamp() - os.path.getmtime(p) < 600:
+            return
+    except OSError:
+        pass
+    try:
+        os.makedirs(STATE, exist_ok=True)
+        open(p, "w").close()
+        detach([sys.executable, os.path.abspath(__file__), "--blockscan"])
+    except OSError:
+        pass
+
+
+def blockscan(now=None):
+    """Every chat's transcripts changed since the last scan (minus GAP + 10 min, so incidents open then are re-read).
+    The first scan reads them all (in the background; ~30 s for a few GB)."""
+    t0 = now or datetime.now().timestamp()
+    try:
+        since = json.load(open(SCAN, encoding="utf-8"))["t"] - GAP - 600
+    except (OSError, ValueError, KeyError):
+        since = 0.0
+    rows = blog_rows()
+    new, upd = scan(rows, transcripts(since=since), now=t0)
+    if new or upd:
+        blog_write(rows)  # locked (Excel) -> OSError, SCAN not moved: the next scan retries
+    os.makedirs(STATE, exist_ok=True)
+    with open(SCAN, "w", encoding="utf-8") as f:
+        json.dump({"t": t0}, f)
+    return new, upd
 
 
 def block_save(ctx, f):
-    """f: time, tipo, bloqueado, error, intento, solucion -> appends the row, marks these blocks as logged
-    (so the next `blocklog>` in this chat only picks up newer ones), -> one-line summary."""
+    """Manual row from the form (a block the transcripts don't show, e.g. a hung shell) -> one-line summary."""
     row = [ctx["date"], f.get("time", ""), ctx["sid"], ctx["project"], ctx["model_effort"], ctx["n"], f.get("tipo", ""),
-           f.get("bloqueado", ""), f.get("error", ""), f.get("intento", ""), f.get("solucion", "")]
+           f.get("bloqueado", ""), f.get("error", ""), f.get("intento", ""), f.get("solucion", ""), ""]
     append(row, BLOG_CSV, BLOG_COLS)
-    if ctx.get("until"):
-        os.makedirs(STATE, exist_ok=True)
-        with open(seen_path(ctx["sid"]), "w", encoding="utf-8") as fh:
-            json.dump({"until": ctx["until"]}, fh)
     return (f"{ctx['date']} {f.get('time', '')} · {ctx['project']} · {ctx['model_effort']} · {ctx['n']}× "
             f"{f.get('tipo', '')} · {f.get('bloqueado', '')[:80]} · {f.get('solucion', '')}")
 
 
 def block_form(ctx, pre):
-    n = ctx["n"]
-    found = T("Sacado del chat; cámbialo si hace falta.") if n else T("No lo encontré en el chat: rellénalo a mano.")
-    fields = [("time", T("Cuándo"), pre.get("time", ""), T("Hora (HH:MM).") + " " + (found if n else
-               T("Si no fue hoy ({d}), pon también el día.", d=ctx["date"])), not n),
+    fields = [("time", T("Cuándo"), pre.get("time", ""), T("Hora (HH:MM).") + " " + T("Si no fue hoy ({d}), pon también el día.", d=ctx["date"]), True),
               ("tipo", T("Tipo"), pre.get("tipo", ""), T("outage clasificador (no verdict) · denegado [motivo] · "
-               "safety check · shell colgado · otro."), not n),
-              ("bloqueado", T("Qué se bloqueó"), pre.get("bloqueado", ""), T("Herramienta: comando.") + " " + found, not n),
-              ("error", T("Error"), pre.get("error", ""), T("Texto exacto del error (primeras frases).") + " " + found, not n),
+               "safety check · shell colgado · otro."), True),
+              ("bloqueado", T("Qué se bloqueó"), pre.get("bloqueado", ""), T("Herramienta: comando."), True),
+              ("error", T("Error"), pre.get("error", ""), T("Texto exacto del error (primeras frases)."), True),
               ("intento", T("Qué se intentó"), pre.get("intento", ""), T("Reintentos, ! comando, Shift+Tab a modo "
                "manual, regla en settings… (opcional)."), False),
               ("solucion", T("Solución"), pre.get("solucion", ""), T("Cómo se arregló, o «sin resolver»."), False)]
@@ -564,32 +724,89 @@ def block_form(ctx, pre):
         if not f["solucion"]:
             return T("Solución: cómo se arregló, o «sin resolver».")
 
-    form(T("blocklog> — {n} bloqueo(s) en {p}", n=n, p=ctx["project"]), fields, check, lambda f: block_save(ctx, f),
+    form(T("blocklog> — apuntar a mano ({p})", p=ctx["project"]), fields, check, lambda f: block_save(ctx, f),
          pre.get("err", ""))
 
 
 def block_main(hook, args):
-    sid = hook.get("session_id", "")
-    try:
-        since = json.load(open(seen_path(sid), encoding="utf-8"))["until"]
-    except (OSError, ValueError, KeyError):
-        since = ""
-    bs = blocks(hook.get("transcript_path", ""), since)
-    pre = dict(block_pre(bs), solucion=args.strip())
-    g = gather(hook)
-    ctx = {"date": pre.pop("date", g["date"]), "sid": sid, "project": g["project"],
-           "model_effort": g["st"]["model_effort"], "n": len(bs), "until": pre.pop("until", "")}
-    if bs and pre["solucion"]:
+    """`blocklog> [solución]`: logs this chat's unlogged blocks now (its subagents' too, open incidents included) and
+    puts the text as solución of this chat's pending rows. Nothing found and nothing pending -> the manual form."""
+    sid, text = hook.get("session_id", ""), args.strip()
+    rows = blog_rows()
+    new, upd = scan(rows, transcripts(sid), close_all=True) if sid else ([], [])
+    mine = [r for r in rows if sid and r["session_id"].split(" ")[0] == sid and r.get("solucion") == PEND]
+    if text:
+        for r in mine:
+            r["solucion"] = text
+    if new or upd or (text and mine):
         try:
-            reply(T("✅ apuntado en {f}:", f="blocklog.csv") + "\n" + block_save(ctx, pre))
+            blog_write(rows)
         except OSError:
-            pre["err"] = locked(BLOG_CSV)
-    spawn({"kind": "block", "ctx": ctx, "pre": pre})
-    reply(T("📝 blocklog>: ventana abierta (puedes minimizarla).") + " "
-          + (T("Encontré {n} bloqueo(s) nuevo(s) en este chat, ya rellenados.", n=len(bs)) if bs
-             else T("No encontré bloqueos nuevos en este chat: rellénalo a mano."))
-          + (" " + T("⚠ {f} está abierto (¿Excel?): ciérralo antes de pulsar Apuntar.", f="blocklog.csv")
-             if pre.get("err") else ""))
+            reply(T("⚠ blocklog.csv está abierto (¿Excel?): ciérralo y vuelve a escribir el blocklog>. "
+                    "No se pierde nada: los bloqueos siguen en el transcript."))
+    if new or mine:
+        reply(T("✅ blocklog.csv: {n} incidente(s) nuevo(s) de este chat", n=len(new))
+              + (T("; solución «{t}» en {k} fila(s)", t=text, k=len(mine)) if text and mine else
+                 T("; {k} fila(s) de este chat siguen «pendiente» (blocklog> <solución> la rellena)", k=len(mine)) if mine else "")
+              + "".join(f"\n· {r['date']} {r['time']} · {r['tipo']} · {r['bloqueado'][:80]} · {r['solucion']}"
+                        for r in (mine or new)[-5:]))
+    g = gather(hook)
+    ctx = {"date": g["date"], "sid": sid, "project": g["project"], "model_effort": g["st"]["model_effort"], "n": 0}
+    spawn({"kind": "block", "ctx": ctx, "pre": {"solucion": text}})
+    reply(T("📝 blocklog>: no hay bloqueos sin apuntar ni pendientes en este chat (se apuntan solos, de todos los chats, "
+            "como mucho cada 10 min): ventana abierta para apuntar uno a mano."))
+
+
+def clip(text):
+    """Text -> clipboard: Windows clip.exe (reads UTF-16LE as Unicode); Mac pbcopy; Linux wl-copy or xclip
+    (Mac/Linux untested). -> True if copied."""
+    if os.name == "nt":
+        cmds, data = [["clip"]], text.encode("utf-16-le")
+    else:
+        cmds, data = [["pbcopy"], ["wl-copy"], ["xclip", "-selection", "clipboard"]], text.encode("utf-8")
+    for c in cmds:
+        try:
+            if subprocess.run(c, input=data, timeout=5, capture_output=True).returncode == 0:
+                return True
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return False
+
+
+def allow_text(b):
+    """Standard consent sentence for one denied call: the exact action, the classifier's reason, the scope."""
+    why = kind(b["err"]).removeprefix("denegado ")
+    cmd = " ".join(b["full"].split())  # one line: readable in the prompt box
+    cmd = cmd if len(cmd) <= 600 else cmd[:600] + " […]"
+    return T("Autorizo explícitamente la acción que el clasificador de auto mode te denegó a las {hm} ({why}): "
+             "{tool}: {cmd} — solo esa acción, solo en este chat y una vez: reinténtala tal cual. Si necesitas "
+             "cambiarla, no la hagas y pregúntame.", hm=f"{local(b['ts']):%H:%M}",
+             why=why if why.startswith("[") else T("sin motivo"), tool=b["tool"], cmd=cmd)
+
+
+def allow_main(hook, n, extra, copy=clip):
+    """`allow>` / `allow N>`: the consent sentence for this chat's last (or Nth last) classifier denial, subagents
+    included, goes to the clipboard; the person pastes it and sends it. The hook never sends or injects it: consent
+    has to be the person's own message (a script writing it alone = forged consent, refused as [Auto-Mode Bypass])."""
+    if extra.strip():
+        reply(T("🔁 ¿Te referías a `allow {n}>`?", n=extra.strip()) if extra.strip().isdigit() else
+              T("🛡 Uso: `allow>` (última denegación de este chat) o `allow N>` (la N-ésima más reciente)."))
+    sid = hook.get("session_id") or ""
+    bs = sorted((b for p, _, _ in transcripts(sid) if sid for b in blocks(p) if kind(b["err"]).startswith("denegado")),
+                key=lambda b: b["ts"], reverse=True)[:5]
+    if not bs:
+        reply(T("🛡 allow>: no hay denegaciones del clasificador en este chat. Un outage («no verdict») se arregla "
+                "reintentando; un hook o un safety check no se saltan con permiso."))
+    i = int(n or 1)
+    if i > len(bs):
+        reply(T("🛡 allow>: este chat solo tiene {n} denegación(es) recientes; usa `allow 1>`…`allow {n}>`.", n=len(bs)))
+    t = allow_text(bs[i - 1])
+    reply((T("📋 Copiado al portapapeles: léelo, pégalo (Ctrl+V) y envíalo tú.") if copy(t) else
+           T("⚠ No pude copiarlo: selecciónalo abajo, cópialo y envíalo tú."))
+          + " " + T("Alternativa sin pegar: /permissions → Recently denied.") + "\n"
+          + "".join(f"\n{'→' if k == i else ' '} {k}. {local(b['ts']):%H:%M} · {kind(b['err'])} · {b['tool']}: {b['cmd'][:90]}"
+                    for k, b in enumerate(bs, 1))
+          + "\n\n" + t)
 
 
 def first_prompt(sid):
@@ -620,12 +837,29 @@ def main():
         kw = (s[1] or "").strip()
         reply(T("📨 send>: ventana de borradores abierta (primero los que contienen «{kw}»). Envías tú con el botón.", kw=kw)
               if kw else T("📨 send>: ventana de borradores abierta. Envías tú con el botón."))
+    if VTRIGGER.match(hook.get("prompt", "")) and os.path.exists(VAULT):
+        detach([sys.executable, VAULT, "open"])
+        reply(T("🔐 vault>: ventana abierta (Show / Copy / Add / Generate / Delete). Claude no ve nada de lo que hagas ahí."))
+    lg = LTRIGGER.match(hook.get("prompt", ""))
+    if lg and os.path.exists(LOGIN):
+        if os.name != "nt":  # no console of its own to open here: login.py asks y/n, so it needs a terminal
+            reply(T("🔑 login>: en una terminal: {cmd}", cmd=f'"{sys.executable}" "{os.path.abspath(LOGIN)}" {lg[1].strip()}'))
+        flags = subprocess.CREATE_NEW_CONSOLE  # own window: login.py asks y/n and `claude auth login` waits there
+        try:  # outlive the hook even if Claude Code kills its process tree (as detach())
+            subprocess.Popen([sys.executable, LOGIN, lg[1].strip()], creationflags=flags | subprocess.CREATE_BREAKAWAY_FROM_JOB)
+        except OSError:
+            subprocess.Popen([sys.executable, LOGIN, lg[1].strip()], creationflags=flags)
+        reply(T("🔑 login>: ventana abierta. Confirma allí la cuenta; cambia la cuenta de todos los chats abiertos."))
     b = BTRIGGER.match(hook.get("prompt", ""))
     if b:
         block_main(hook, b[1])
+    a = ATRIGGER.match(hook.get("prompt", ""))
+    if a:
+        allow_main(hook, a[1], a[2])
     m = TRIGGER.match(hook.get("prompt", ""))
     if not m:
         first_prompt(hook.get("session_id"))
+        autoscan()  # blocklog: logs every chat's blocks by itself (detached, at most every 10 min)
         carpetas.hook(hook)  # blocks or adds the folder when the prompt is `<carpeta>:` (or a y/n/m answer to it)
         if held:
             print(json.dumps(held))
@@ -662,7 +896,8 @@ if __name__ == "__main__":
         assert parse("4,5 - bien") == ({"ses": "4.5", "pdf": "—", "note": "bien"}, True)
         assert parse("3 pendiente") == ({"ses": "3", "pdf": "pendiente", "note": ""}, True)
         assert parse("") == ({"note": ""}, False)
-        assert parse("4") == ({"ses": "4", "note": ""}, False)
+        assert parse("4") == ({"ses": "4", "pdf": "—", "corr": "0", "note": ""}, True)
+        assert parse("4 bien") == ({"ses": "4", "note": "bien"}, False)
         assert parse("4 bien hecho") == ({"ses": "4", "note": "bien hecho"}, False)
         assert parse("bien 4 5") == ({"note": "bien 4 5"}, False)
         assert parse("7 5") == ({"note": "7 5"}, False)
@@ -734,12 +969,69 @@ if __name__ == "__main__":
         bp = block_pre(bs)
         assert bp["tipo"] == "outage clasificador | denegado [Auto-Mode Bypass]" and bp["bloqueado"] == "PowerShell: python md2pdf.py"
         assert "–" in bp["time"] and bp["until"] == "2026-10-06T08:05:00Z"
-        # logging marks them as seen: the next blocklog> in that chat finds nothing new
-        BLOG_CSV, STATE = os.path.join(tmp, "b.csv"), tmp
-        ctx = {"date": bp["date"], "sid": "s1", "project": "p", "model_effort": "Opus 5.5 low", "n": 2, "until": bp["until"]}
-        block_save(ctx, dict(bp, solucion="! python"))
-        assert blocks(tr, json.load(open(seen_path("s1"), encoding="utf-8"))["until"]) == []
-        assert list(csv.reader(open(BLOG_CSV, encoding="utf-8-sig")))[1][-1] == "! python"
+        # automatic log: every chat + its subagents from disk, one row per incident, deduped by tool_use id
+        PROJECTS, STATE = os.path.join(tmp, "projects"), os.path.join(tmp, "state")
+        BLOG_CSV, SCAN = os.path.join(tmp, "b.csv"), os.path.join(tmp, "state", "blocklog-scan.json")
+        os.makedirs(os.path.join(PROJECTS, "p", "c1", "subagents"))
+        ok = lambda i, ts: {"type": "user", "timestamp": ts, "message": {"content": [
+            {"type": "tool_result", "tool_use_id": i, "content": "done"}]}}
+        sub = lambda d: dict(d, cwd="C:/x/mi-lab", effort="high", message=dict(d["message"], model="claude-opus-5-5"))
+        put = lambda path, recs: open(path, "w", encoding="utf-8").writelines(json.dumps(d) + "\n" for d in recs)
+        put(os.path.join(PROJECTS, "p", "c1.jsonl"), [  # 3 blocks > 30 min apart = 3 incidents, then one succeeds
+            use("a", "python x.py"), res("a", "2026-10-07T08:00:00Z", den), use("b", "rm -r y"), res("b", "2026-10-07T09:00:00Z", out),
+            use("e", "cat z"), res("e", "2026-10-07T09:30:00Z", "Exit code 1\nauto mode classifier"),  # ran: not a block
+            use("c", "git push"), res("c", "2026-10-07T10:00:00Z", den), use("d", "python x.py"), ok("d", "2026-10-07T11:00:00Z")])
+        put(os.path.join(PROJECTS, "p", "c1", "subagents", "agent-1.jsonl"), [sub(use("s", "reg add")), res("s", "2026-10-07T12:00:00Z", den)])
+        put(os.path.join(PROJECTS, "p", "c2.jsonl"), [use("h", "ls"), res("h", "2026-10-07T08:31:00Z", den)])
+        h2 = local("2026-10-07T08:31:00Z").strftime("%H")  # a row from before the ids column, time written by hand
+        append(["2026-10-07", f"~{h2}:3x", "c2", "p", "?", 1, "t", "by hand", "", "", "x"], BLOG_CSV, BLOG_COLS[:-1])
+        new, upd = blockscan(now=local("2026-10-08T00:00:00Z").timestamp())
+        rows = blog_rows()
+        assert len(new) == 4 and len(rows) == 5 and rows[0]["ids"] == "", (new, rows)  # hand row recognised: c2 not logged again
+        assert [r["ids"] for r in rows[1:]] == ["a", "b", "c", "s"] and rows[4]["session_id"] == "c1 (subagent)"
+        assert rows[4]["model_effort"] == "Opus 5.5 high" and rows[4]["project"] == "mi-lab"
+        assert rows[1]["solucion"].startswith("funcionó al reintentarlo en este chat (2026-10-07") and rows[2]["solucion"] == PEND and upd == [new[0]]
+        assert blockscan(now=local("2026-10-08T00:00:00Z").timestamp()) == ([], []) and len(blog_rows()) == 5  # re-run
+        # a later success in another chat solves a pending row; a block < GAP old waits unless blocklog> closes it
+        now = datetime.now().timestamp()
+        recent = datetime.fromtimestamp(now - 300).astimezone().isoformat()
+        put(os.path.join(PROJECTS, "p", "c3.jsonl"), [use("r", "rm -r y"), ok("r", recent), use("q", "curl x"), res("q", recent, den)])
+        new, upd = blockscan(now=now)
+        assert new == [] and [r["ids"] for r in upd] == ["b"] and upd[0]["solucion"].startswith("funcionó después en el chat c3")
+        import contextlib, io
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                block_main({"session_id": "c3"}, " regla puesta ")
+        except SystemExit:
+            pass
+        rows = blog_rows()
+        assert "1 incidente(s) nuevo(s)" in buf.getvalue() and rows[-1]["ids"] == "q" and rows[-1]["solucion"] == "regla puesta"
+        assert blockscan(now=now + 3600) == ([], [])
+        # allow>: this chat's denials (subagents too, outages not), newest first -> clipboard
+        assert ATRIGGER.match("Allow 2 >")[1] == "2" and ATRIGGER.match("allow> 2")[2] == " 2" and not ATRIGGER.match("allowance> x")
+        assert VTRIGGER.match(" Vault > ") and not VTRIGGER.match("vault> add x") and LTRIGGER.match("login> ana")[1].strip() == "ana"
+        got = []
+        for p, _, _ in transcripts("c1"):  # compact JSON like real transcripts (blocks() prefilters on '"is_error":true')
+            recs = [json.loads(x) for x in open(p, encoding="utf-8")]
+            open(p, "w", encoding="utf-8").writelines(json.dumps(d, separators=(",", ":")) + "\n" for d in recs)
+
+        def allow_run(sid, n, extra=""):
+            buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(buf):
+                    allow_main({"session_id": sid}, n, extra, copy=lambda t: got.append(t) or True)
+            except SystemExit:
+                pass
+            return json.loads(buf.getvalue())["reason"]
+        r = allow_run("c1", "")
+        assert "Copiado" in r and r.endswith(got[-1]) and "→ 1." in r and " 3." in r and " 4." not in r, r
+        assert got[-1].startswith("Autorizo explícitamente") and "PowerShell: reg add — solo esa acción" in got[-1]
+        assert "[Auto-Mode Bypass]" in got[-1]
+        allow_run("c1", "3")
+        assert "PowerShell: python x.py" in got[-1] and len(got) == 2
+        assert "allow 3>" in allow_run("c1", "", " 3") and "solo tiene 3" in allow_run("c1", "9")
+        assert "no hay denegaciones" in allow_run("zz", "") and "no hay denegaciones" in allow_run("", "") and len(got) == 2
         # parallel chats: keyword, detection (same account only, spent after my first prompt), $-based estimate
         assert par_flag("par 4 5 x") == (True, False, "4 5 x") and par_flag("Solo$? 4") == (True, True, "4")
         assert par_flag("4 5 par") == (False, False, "4 5 par") and par_flag("nousage") == (True, False, "")
@@ -769,9 +1061,23 @@ if __name__ == "__main__":
         line, row = build(ctx, {"ses": "4", "pdf": "—"})
         assert row[CSV_COLS.index("parallel")] is True and row[CSV_COLS.index("usage_manual")].startswith("≈5% 5h")
         assert "1 chat(s) en paralelo" in line and par_fields(ctx["u"])[0][2] == "5"
+        # whole hook, home in a temp dir (no real state touched): allow> is answered by main(), never passed to Claude
+        env = dict(os.environ, USERPROFILE=tmp, HOME=tmp)
+        out = subprocess.run([sys.executable, os.path.abspath(__file__)], env=env, capture_output=True, text=True,
+                             input=json.dumps({"prompt": "allow>", "session_id": "t15"})).stdout
+        assert '"decision": "block"' in out and "allow>" in out, out
         print("ok")
     elif sys.argv[1:2] == ["--form"]:
         form_later(sys.argv[2])
+    elif sys.argv[1:2] == ["--blockscan"]:  # `--blockscan --dry`: count what would be logged, write nothing
+        sys.stdout.reconfigure(encoding="utf-8")
+        if sys.argv[2:] == ["--dry"]:
+            rs = blog_rows()
+            n, u = scan(rs, transcripts())
+            print(f"{len(n)} new, {len(u)} solved", *(f"{r['date']} {r['time']} {r['session_id'][:8]} {r['tipo']} | "
+                                                        f"{r['bloqueado'][:70]} | {r['solucion'][:50]}" for r in n + u), sep="\n")
+        else:
+            print("{} new, {} solved".format(*map(len, blockscan())))
     elif sys.argv[1:] == ["--mark"]:
         import shutil
         shutil.copy(os.path.join(STATE, "_last_limits.json"), MARK)

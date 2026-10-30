@@ -11,7 +11,14 @@ Experiencia de semanas usando Claude Code en **modo auto** (Shift+Tab hasta "aut
    - `[Real-World Transactions]`: pagos, opt-outs legales, etc. → lo hace el usuario (p. ej. con su propia ventana de envío).
 3. **Safety check** — "a safety check separate from auto mode blocked this request because of earlier conversation content". Lo dispara algo anterior del chat, no el comando. Suele bastar con un chat nuevo o `! comando`.
 
-**Regla para Claude:** cuando algo se bloquee, decirlo enseguida: qué se bloqueó, el error exacto y por qué (diagnóstico, marcando si es una suposición). No reintentar en silencio ni buscar rodeos. Apuntarlo con `blocklog>`.
+**Regla para Claude:** cuando algo se bloquee, decirlo enseguida: qué se bloqueó, el error exacto y por qué (diagnóstico, marcando si es una suposición). No reintentar en silencio ni buscar rodeos. Los bloqueos se apuntan solos en `blocklog.csv` (el hook de `costlog.py` lee los transcripts de todos los chats y subagentes, como mucho cada 10 min); `blocklog> <solución>` añade qué lo arregló.
+
+## Autorizar una denegación concreta — `allow>`
+Cuando el clasificador deniega algo que tú sí quieres (p. ej. `[Self-Modification]` al editar un settings que le has pedido), lo que funciona es un mensaje **tuyo** que nombre **la acción exacta**:
+- **Funcionó** (varias veces, con motivos distintos): «Autorizo explícitamente la acción que te denegó el clasificador: `<herramienta>: <comando exacto>` — solo esa, en este chat, una vez». **No funcionó** cuando el mensaje solo nombraba el objetivo («para hacer el formulario») o cuando Claude había elegido él un valor del comando (p. ej. un usuario que buscó él).
+- **`allow>`** (o `allow N>` para la N-ésima más reciente) te deja esa frase en el portapapeles, con la hora, el motivo y el comando exacto de la última denegación del clasificador en este chat (también las de sus subagentes). La lees, la pegas (Ctrl+V) y la envías tú. El hook nunca la manda ni la mete en el chat: un script que escribe tu consentimiento es justo lo que el clasificador rechaza como `[Auto-Mode Bypass]`. Las caídas («no verdict»), los hooks y los safety checks no salen: un permiso no los arregla.
+- **Alternativa sin pegar:** `/permissions` → *Recently denied* → aprobarla. Claude recibe el permiso pero solo lo usa en tu siguiente mensaje.
+- Si la misma denegación se repite y es segura, mejor una entrada en `autoMode.allow` (abajo) que autorizarla cada vez.
 
 ## Ajustes que funcionaron (en `~/.claude/settings.json`)
 - **Reglas `allow` exactas por script**, nunca de intérprete entero (`Bash(python:*)` el modo auto la ignora porque equivale a ejecutar cualquier cosa):

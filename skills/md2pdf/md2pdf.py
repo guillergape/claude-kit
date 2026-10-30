@@ -60,6 +60,11 @@ pre code { padding: 0; }
 img { max-width: 100%; }
 hr { border: none; border-top: 1px solid #ddd; margin: 18px 0; }
 .math-display { margin: 8px 0; overflow-x: visible; break-inside: avoid; }
+/* "$$…$$<span class="cond">…</span>": the purple condition sits on the formula's line, right next to it (before, the
+   display div pushed it to the next line, left margin). Wraps below only if there is no room. */
+.math-cond { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 14px; break-inside: avoid; }
+.math-cond > .math-display { margin: 8px 0; }
+.math-cond .katex-display { margin: 0.5em 0; }
 .katex { font-size: 1.08em; }
 .katex-error-box { color: #b00020; border: 2px solid #b00020; padding: 4px; }
 /* Optional colour code for study notes (classes used in the .md as <span class="def">…) */
@@ -71,6 +76,8 @@ hr { border: none; border-top: 1px solid #ddd; margin: 18px 0; }
 .cond { color: #7b2fb5; font-size: 0.92em; }               /* purple text next to an equation: iff conditions for it */
 .box-law { display: inline-block; background: #e6d4f7; border: 2px solid #7b2fb5; padding: 3px 8px; }  /* purple box: always-true law / theorem */
 div.box-law { display: table; margin: 10px auto; padding: 0 18px; break-inside: avoid; }
+.box-def { display: inline-block; background: #c9f2c9; border: 2px solid #1b8a3a; padding: 3px 8px; }  /* green box: pure definition formula (text stays black) */
+div.box-def { display: table; margin: 10px auto; padding: 0 18px; break-inside: avoid; }
 .hl-f { background: #ffc9c9; padding: 1px 3px; }           /* red highlight: important formula */
 .box-f { display: inline-block; background: #ffc9c9; border: 2px solid #d01818; padding: 3px 8px; }  /* key formula / conclusion */
 div.box-f { display: table; margin: 10px auto; padding: 0 18px; break-inside: avoid; }
@@ -82,11 +89,26 @@ div.box-f { display: table; margin: 10px auto; padding: 0 18px; break-inside: av
 .minor-li { color: #808080; }                              /* whole list item grey: its bullet goes light grey too */
 li:has(> .minor-li, > p > .minor-li)::marker { color: #b8b8b8; }
 .hl-case { background: #cdeafa; padding: 1px 3px; }        /* light blue highlight: 2nd group of cases on the page */
+/* Inline highlight around tall maths (dfrac, sub/superscripts): an inline background only covers the text line, so
+   numerators/denominators stuck out of it. KaTeX's .base pieces are inline-blocks as tall as the formula: paint them too. */
+span.hl .katex-html > .base { background: #fff27a; }
+span.hl-f .katex-html > .base { background: #ffc9c9; }
+span.hl-def .katex-html > .base { background: #c9f2c9; }
+span.hl-asm .katex-html > .base { background: #e6d4f7; }
+span.hl-case .katex-html > .base { background: #cdeafa; }
+span.hl-math { display: inline-block; }
 .box-case { display: inline-block; border: 2px solid #1e9bd7; padding: 1px 6px; }  /* light blue box: 3rd group of cases */
 div.box-case { display: table; margin: 8px auto; padding: 0 14px; break-inside: avoid; }
 .ul-case { text-decoration-line: underline; text-decoration-color: #1e9bd7; text-decoration-thickness: 2px; text-underline-offset: 3px; }  /* light blue underline: 3rd group (alternative to box-case) */
+.box-g { display: inline-block; border: 1px solid #aaa; padding: 1px 6px; color: #888; }  /* formula on the exam formula sheet: grey + thin grey box */
+div.box-g { display: table; margin: 8px auto; padding: 0 14px; break-inside: avoid; }
+.grey-f { color: #888; }                                   /* formula on the formula sheet that had no box: grey only */
 .box { display: inline-block; border: 1.6px solid #222; padding: 3px 8px; }  /* plain box: final result to keep at hand, below red */
 div.box { display: table; margin: 10px auto; padding: 0 18px; break-inside: avoid; }
+/* Highlight width = importance: a highlighted display formula is highlighted only around the formula;
+   add "wide" (<div class="hl-f wide">) for margin-to-margin, only for the most important ones. */
+div.hl, div.hl-f, div.hl-def, div.hl-asm, div.hl-case { display: table; margin: 8px auto; padding: 0 14px; break-inside: avoid; }
+div.wide { display: block; margin: 8px 0; }
 .skipped { color: #808080; font-weight: 700; }             /* grey bold: skipped on purpose / still to check */
 .imp1::after, .imp2::after, .imp3::after { font-weight: 900; font-size: 1.05em; vertical-align: 0.55em; margin-left: 3px; color: #222; }
 .imp1::after { content: "!"; } .imp2::after { content: "!!"; } .imp3::after { content: "!!!"; }  /* floating bold ! marks: importance 1-3 */
@@ -135,7 +157,17 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 // Layout fixes, done on "load" (images in place, so heights are real) and before printing:
-window.addEventListener("load", function () { glueInline(); keepWithNext(); });
+window.addEventListener("load", function () { boxMathHighlights(); glueInline(); keepWithNext(); });
+// 0) A highlight that holds only maths becomes one inline-block, so the colour is a clean rectangle as tall as the
+//    formula (fractions included). Highlights mixing text and maths keep the per-piece painting (see CSS).
+function boxMathHighlights() {
+  document.querySelectorAll("span.hl, span.hl-f, span.hl-def, span.hl-asm, span.hl-case").forEach(function (el) {
+    if (!el.querySelector(".katex")) return;
+    var c = el.cloneNode(true);
+    c.querySelectorAll(".katex").forEach(function (k) { k.remove(); });
+    if (!c.textContent.trim()) el.classList.add("hl-math");
+  });
+}
 // 1) Short inline formulas never break across lines (KaTeX allows a break after "<", ">", "=") and stay glued to an
 //    opening "(" / "[" before them and to ")" "." "," ";" ":" after them. Long ones (> 45% of the line) may still break.
 function glueInline() {
@@ -236,7 +268,7 @@ function qa() {
       var r = document.createRange(); r.selectNodeContents(n);
       Array.prototype.forEach.call(r.getClientRects(), function (c) { solid.push(c); });
     }
-    document.querySelectorAll("img, table, .box, .box-f, .box-law, .box-case, .katex-html > .base").forEach(function (el) { if (!el.closest(".aside-r")) solid.push(el.getBoundingClientRect()); });
+    document.querySelectorAll("img, table, .box, .box-f, .box-law, .box-def, .box-case, .katex-html > .base").forEach(function (el) { if (!el.closest(".aside-r")) solid.push(el.getBoundingClientRect()); });
     function hit(a, b) { return a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1; }
     notes.forEach(function (nt, i) {
       var a = nt.getBoundingClientRect(), g = {left: a.left - 6, right: a.right, top: a.top, bottom: a.bottom};
@@ -375,16 +407,21 @@ def restore_math(body, store):
         cls = ' class="math-display"' if kind == "display" else ""
         return f'<{tag}{cls} data-tex="{kind}">{html.escape(tex.strip())}</{tag}>'
 
+    # display formula + its purple cond (in a paragraph or inside a box div) -> one flex line, cond beside the formula
+    cond = lambda m: f'<div class="math-cond">{span(int(m.group(1)))}{m.group(2)}</div>'
+    body = re.sub(r'<p>\s*MATHPH(\d+)X\s*(<span class="cond">.*?</span>)\s*</p>', cond, body, flags=re.S)
+    body = re.sub(r'MATHPH(\d+)X\s*(<span class="cond">.*?</span>)', lambda m: cond(m) if store[int(m.group(1))][0] == "display" else m.group(0), body, flags=re.S)
     body = re.sub(r"<p>\s*MATHPH(\d+)X\s*</p>", lambda m: span(int(m.group(1))), body)
     return re.sub(r"MATHPH(\d+)X", lambda m: span(int(m.group(1))), body)
 
 
-def build_html(md_path, keep_max=KEEP_MAX):
-    text = md_path.read_text(encoding="utf-8")
+def build_html(md_path, keep_max=KEEP_MAX, text=None, stem=None):
+    """text/stem: build from an already filtered text (e.g. a copy of the note) instead of the file itself."""
+    text = md_path.read_text(encoding="utf-8") if text is None else text
     protected, store = protect_math(text)
     md = MarkdownIt("commonmark", {"html": True}).enable("table")
     body = restore_math(md.render(protected), store)
-    title = html.escape(md_path.stem)
+    title = html.escape(stem or md_path.stem)
     # <base> makes relative image paths in the .md resolve from the .md's folder
     base = md_path.parent.as_uri() + "/"
     script = (SCRIPT.replace("TALL_INLINE_EM", str(TALL_INLINE_EM)).replace("KEEP_MAX", str(keep_max))

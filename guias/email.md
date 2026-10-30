@@ -3,7 +3,7 @@
 ## Reglas (copiar las que quieras al CLAUDE.md global)
 - **Siempre borrador primero.** Claude nunca decide por su cuenta que un email puede salir.
 - **"envíalo tú"** (u orden igual de explícita **para ese email**, no se arrastra al siguiente) → envía el borrador tal cual, sin más confirmación, y luego dice qué salió (de, para, cc, asunto, adjuntos). Se envía el **borrador existente**, así salen los adjuntos.
-- **"lo envío yo"** / `send> <palabras clave>` → se abre la ventana de `costlog/send.py` (0 tokens: la abre el hook, Claude no ve el prompt) con tus borradores de todas las cuentas; revisas y envías con el botón.
+- **"lo envío yo"** / `send> <palabras clave>` → se abre la ventana de `costlog/send.py` (0 tokens: la abre el hook, Claude no ve el prompt) con tus borradores de todas las cuentas; revisas y envías con el botón. El cuerpo se puede editar ahí: **Guardar borrador** lo sube a Gmail (mismo borrador, adjuntos e hilo se quedan; el HTML se rehace con un párrafo por línea, así que se pierden negritas y enlaces) y **Enviar** guarda antes si lo editaste.
 - **Nunca enviar pulsando "Enviar" en el navegador** (la ventana de deshacer de Gmail canceló un envío y la pestaña se colgó al reintentar).
 - **Nunca usar la herramienta `reply` del conector de claude.ai**: envía al momento, no hace borrador. Una respuesta en un hilo = `create_draft` con `replyToMessageId`.
 - **Correcciones = `update_draft` sobre el mismo borrador**, nunca uno nuevo. **Gana el último que guarda:** si tienes el borrador abierto en Gmail, tu ventana no ve la edición de Claude y tu autoguardado la machaca. Antes de editar: cierra el borrador en Gmail; Claude lo lee (`get_draft`) justo antes de actualizar y conserva tus cambios; después lo relee.

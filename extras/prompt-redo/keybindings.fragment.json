@@ -1,0 +1,7 @@
+{
+  "_LEEME": "Fragmento para FUSIONAR en ~/.claude/keybindings.json (nunca copiar tal cual: mantener sus atajos). Cada objeto va al bloque de su 'context' (si ya existe, solo se añaden estas teclas; si la persona ya usa ctrl+z / ctrl+y en ese contexto, preguntarle). Si no tiene keybindings.json, se crea con '$schema' y 'bindings' sin esta clave _LEEME. Validar el JSON.",
+  "bindings": [
+    { "context": "Chat", "bindings": { "ctrl+z": "chat:undo", "ctrl+y": null } },
+    { "context": "Global", "bindings": { "ctrl+y": "app:cycleDiffBase" } }
+  ]
+}

@@ -31,7 +31,8 @@ Tools and habits for working with Claude Code, with nothing personal from anyone
 ## The most useful bits
 - **Status line**: model, $ spent, % of the 5-hour and weekly limits, and % of context, always visible.
 - **`costlog> 4 5 note`** at the end of a session: logs cost, time, model and your rating to a CSV, with no tokens. Over time you learn which model/effort each task deserves.
-- **`blocklog> how it was fixed`**: logs auto-mode permission blocks with the exact error.
+- **blocklog**: auto-mode permission blocks of all your chats are logged to a CSV by themselves, with the exact error (`blocklog> how it was fixed` adds the fix). **`allow>`**: puts on the clipboard your consent for the last denial, naming the exact action, for you to paste.
+- **vault** (`vault>`): your scripts' tokens and API keys in the system's credential store; Claude never sees them. **`login> account`**: switches Claude Code's account (on Windows, without typing the email code).
 - **`_<folder>: task`**: work only in that folder (a script finds it by name, also nested: `_prog_p2:`).
 - **`qq > question`**: quick question that changes nothing (`prog_p2 qq > …` = question about that folder).
 - **md2pdf**: Markdown notes with formulas → nice PDF.

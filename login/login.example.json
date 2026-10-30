@@ -1,0 +1,11 @@
+{
+  "_LEEME": "Copia este fichero a <LAB>/login/login.json y rellena TUS datos (este ejemplo no vale tal cual: las cuentas con <…> se ignoran). cuentas = las cuentas de Claude entre las que cambias; gmail = cómo lee login.py el correo de inicio de sesión de claude.ai de esa cuenta: \"send\" (tokens del MCP google-workspace, los mismos que send.py), \"vault\" (token de solo lectura creado una vez con login.py --gmail-auth <email>, guardado en el vault) o \"no\" (no se lee: el código lo escribes tú en la ventana de Edge). edge = ruta de msedge.exe. perfiles = carpeta donde cada cuenta tiene su propio perfil de Edge (se crea solo). oauth_client = solo para --gmail-auth: un JSON con client_id/client_secret de Google (p. ej. uno de ~/.google_workspace_mcp/credentials/); vacío = el primero de esa carpeta o las variables GOOGLE_OAUTH_CLIENT_ID/_SECRET. Borra esta clave _LEEME al terminar.",
+  "cuentas": [
+    { "email": "<cuenta principal>@gmail.com", "gmail": "send" },
+    { "email": "<otra cuenta>@gmail.com", "gmail": "vault" },
+    { "email": "<cuenta sin Gmail que se pueda leer>@<dominio>", "gmail": "no" }
+  ],
+  "edge": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "perfiles": "<HOME>/AppData/Local/claude-login",
+  "oauth_client": ""
+}

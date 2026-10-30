@@ -20,6 +20,7 @@ En portátiles con **Modern Standby** (S0 low power idle; míralo con `powercfg 
 - Los salvapantallas de Windows no sirven: `ES_DISPLAY_REQUIRED` los bloquea y no bajan el brillo.
 - Cerrar la tapa **sí** suspende (eso no lo puede impedir un programa).
 - Bug histórico: en PowerShell 7 `0x80000003` es un Int32 negativo y la llamada fallaba en silencio (ventana oculta), así que el hook no hacía nada. Esta copia usa `[uint32]2147483651`, que vale en PowerShell 5.1 y 7.
+- Si se mata la pantalla negra a mitad (p. ej. al cerrar el chat), el brillo se queda a 0: la siguiente vez el hook recupera el brillo original del fichero que dejó, en vez de guardar ese 0 como el «tuyo». Y en PowerShell 7 lanzado oculto la ventana negra perdía «siempre encima» al mostrarse y quedaba detrás: se vuelve a poner tras `Show()` (en 5.1 no pasaba; no hace daño).
 - Errores amarillos "API Error … connection" no son siempre suspensión: pueden ser cortes de Wi-Fi. Para distinguirlo: `Get-WinEvent` del log System (Kernel-Power 506/507 = entra/sale de Modern Standby) y `Microsoft-Windows-WLAN-AutoConfig/Operational` (11004/11005 = reautenticación Wi-Fi) alrededor de la hora del error.
 
 ## Comprobar que funciona
