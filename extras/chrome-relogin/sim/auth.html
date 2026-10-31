@@ -1,0 +1,2 @@
+<!doctype html><title>Claude</title><body><h2>Claude wants access</h2><button id=b disabled onclick="localStorage.ok=1;document.body.innerHTML='<p>Done</p>'">Authorize</button>
+<script>setInterval(()=>{var b=document.getElementById('b');if(b)b.disabled=!document.hasFocus()},200)</script>

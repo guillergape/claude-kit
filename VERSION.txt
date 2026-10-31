@@ -1,3 +1,3 @@
-Versión del kit: 2026-10-30_1213
-(fecha del fichero más nuevo: CAMBIOS.md)
+Versión del kit: 2026-10-31_1244
+(fecha del fichero más nuevo: extras/chrome-relogin/chrome_relogin.py)
 Si mandas el informe o feedback, copia esta línea.

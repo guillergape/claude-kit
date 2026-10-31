@@ -47,6 +47,13 @@ Para cualquier web, usa la primera opción que funcione: 1) **API / script / ski
 - Nunca imprimas, devuelvas ni leas un secreto (tampoco del portapapeles). El vault nunca rellena inicios de sesión ni formularios de registro ni crea cuentas: los inicios de sesión los rellena el gestor de contraseñas del navegador y tú solo pulsas «Entrar». Yo lo veo y lo gestiono con `vault>` (0 tokens).
 <!-- /kit:vault -->
 
+<!-- kit:chrome-relogin -->
+## Claude in Chrome sin sesión — `chrome_relogin.py` (solo Windows + Edge)
+- Si las herramientas `mcp__claude-in-chrome__*` fallan porque la extensión ha perdido la sesión o no está conectada, **no pares el chat ni me pidas que inicie sesión**: ejecuta `uv run --quiet --with uiautomation python -I "<LAB>/kit/extras/chrome-relogin/chrome_relogin.py"` (0 tokens, 10–60 s; pulsa el «Log in» de la extensión y el «Authorize» de claude.ai por UI Automation en una ventana de Edge fuera de pantalla, y se borra lo que crea) y reintenta la herramienta **una sola vez**. Salida 0 = conectada (o ya lo estaba) · 2 = no pudo (lee `chrome_relogin.log` y dímelo) · 3 = hace falta yo (captcha, código u otra cuenta: trae su ventana delante; dímelo).
+- Solo en la cuenta a la que pertenece la extensión (`chrome_relogin.json` → `email`); con otra cuenta de Claude Code no sirve y no debe lanzarse. Se niega a autorizar una página que muestre otra cuenta.
+- Está hecho para no robar el foco ni tocar mis pestañas. Si abre una ventana delante de mí o deja ventanas o pestañas, dímelo; no lo arregles a base de clics.
+<!-- /kit:chrome-relogin -->
+
 <!-- kit:email -->
 ## Emails — borrador por defecto
 - **Siempre borrador primero.** Nunca decidas tú que un email puede salir.

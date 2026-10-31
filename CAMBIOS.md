@@ -7,6 +7,11 @@
      justo bajo su título una línea `<!-- importante: sí`, cerrada igual que este comentario: va al aviso mensual
      a los suscriptores. -->
 
+## 2026-10-31 — nuevo `extras/chrome-relogin/`: si Claude in Chrome pierde la sesión, vuelve a entrar solo
+<!-- importante: sí -->
+- **Nuevo `extras/chrome-relogin/`** (opcional, **solo Windows + Edge**): cuando la extensión Claude in Chrome pierde la sesión, un chat que la usa se quedaba parado hasta que pulsabas «Log in». `chrome_relogin.py` lo pulsa por ti (y el «Authorize» de claude.ai) con UI Automation, sin tokens ni capturas. Abre una ventana de Edge **fuera de pantalla**, no te roba el foco ni cambia tus pestañas, se niega a autorizar otra cuenta distinta de la tuya y borra todo lo que crea (también tras un cierre brusco). Probado con una simulación y con la extensión conectada; **aún no con una desconexión real**.
+- **CLAUDE.md global** (`plantillas/CLAUDE.global.md`): sección nueva `kit:chrome-relogin` (si la extensión falla, lanzar el script y reintentar una vez). **Guía** (`CLAUDE.md`, fase 8 y tabla): se ofrece solo en Windows con Edge. Nada que actualizar en lo que tienes instalado; si lo quieres, pídele a tu Claude «chrome-relogin».
+
 ## 2026-10-30 — empezar la ventana de 5 h a una hora fija, con el ordenador apagado
 <!-- importante: sí -->
 - **Nueva guía `guias/ventana-5h.md`** (opcional): dos rutinas en la nube (invierno y verano, para no depender del cambio de hora) que cada día a la hora que elijas mandan «OK» con el modelo más pequeño, y así la ventana de 5 h empieza ahí aunque el ordenador esté apagado. Casi no gasta límite. Tu Claude las crea con la skill `schedule`; se pueden borrar desde claude.ai/code/routines. Creadas y programadas en una cuenta del autor; que abran la ventana de 5 h aún está sin comprobar.
