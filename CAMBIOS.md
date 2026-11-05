@@ -7,6 +7,10 @@
      justo bajo su título una línea `<!-- importante: sí`, cerrada igual que este comentario: va al aviso mensual
      a los suscriptores. -->
 
+## 2026-11-05 — nuevo `extras/terminal-favoritos/`: flecha arriba con tus carpetas favoritas de Claude
+- **Nuevo `extras/terminal-favoritos/`** (opcional, PowerShell con PSReadLine): con el prompt vacío, flecha arriba muestra primero tus comandos `cd "<carpeta>"; claude` más repetidos y luego el historial normal; flecha abajo vuelve. Los favoritos no se guardan en el historial. `detectar.py` saca la lista de **tu** historial de PowerShell (solo carpetas que existen hoy; si no hay historial, te pregunta qué carpetas quieres) y te la enseña: no se escribe nada hasta que des tu OK. Tiene `--test`, y `test_tui.py` (Windows) la prueba en un PowerShell oculto con un historial falso, sin tocar tu perfil ni tu historial.
+- **Guía** (`CLAUDE.md`, tabla y fase 8): se ofrece solo si la quieres. Nada que actualizar en lo que tienes instalado; si la quieres, pídele a tu Claude «terminal-favoritos».
+
 ## 2026-10-31 — nuevo `extras/chrome-relogin/`: si Claude in Chrome pierde la sesión, vuelve a entrar solo
 <!-- importante: sí -->
 - **Nuevo `extras/chrome-relogin/`** (opcional, **solo Windows + Edge**): cuando la extensión Claude in Chrome pierde la sesión, un chat que la usa se quedaba parado hasta que pulsabas «Log in». `chrome_relogin.py` lo pulsa por ti (y el «Authorize» de claude.ai) con UI Automation, sin tokens ni capturas. Abre una ventana de Edge **fuera de pantalla**, no te roba el foco ni cambia tus pestañas, se niega a autorizar otra cuenta distinta de la tuya y borra todo lo que crea (también tras un cierre brusco). Probado con una simulación y con la extensión conectada; **aún no con una desconexión real**.
